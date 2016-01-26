@@ -18,7 +18,7 @@ class UserActor(uid: String, field: ActorRef, out: ActorRef) extends Actor {
 
   def receive = {
     case js: JsValue => {
-      (js \ "result").validate[Boolean] map { field ! Result(uid, _) }
+      (js \ "result").validate[Boolean] foreach { field ! Result(uid, _) }
       val question = Json.obj("type" -> "question", "question" -> Map("a" -> random, "b" -> random))
       out ! question
     }
