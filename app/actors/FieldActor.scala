@@ -5,7 +5,6 @@ import play.libs.Akka
 
 object FieldActor {
   lazy val field = Akka.system().actorOf(Props[FieldActor])
-  def apply() = field
 }
 
 case class Result(isCorrect: Boolean)
