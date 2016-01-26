@@ -19,7 +19,7 @@ class UserActor(uid: String, field: ActorRef, out: ActorRef) extends Actor {
   def receive = {
     case js: JsValue => {
       (js \ "result").validate[Boolean] foreach { field ! Result(_) }
-      val question = Json.obj("type" -> "question", "question" -> Map("a" -> random, "b" -> random))
+      val question = Json.obj("type" -> "question", "question" -> Map("a" -> random(), "b" -> random()))
       out ! question
     }
     case Result(isCorrect) if sender == field => {
@@ -36,5 +36,5 @@ class UserActor(uid: String, field: ActorRef, out: ActorRef) extends Actor {
     }
   }
 
-  def random = (Random.nextInt(9) + 1) * 10 + Random.nextInt(10)
+  def random() = (Random.nextInt(9) + 1) * 10 + Random.nextInt(10)
 }
