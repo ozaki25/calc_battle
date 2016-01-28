@@ -19,12 +19,13 @@ class FieldActor extends Actor {
 
   def receive = {
     case Result(isCorrect) => {
+      print(users)
       val user = users(sender)
       val updateUser = user.copy(continuationCorrect = if(isCorrect) user.continuationCorrect + 1 else 0)
       val result = updateUser.uid -> updateUser.continuationCorrect
       val finish = updateUser.continuationCorrect >= 5
-      users - sender
-      users + (sender -> updateUser)
+      users -= sender
+      users += (sender -> updateUser)
       users.keys foreach { _ ! UpdateUser(result, finish) }
     }
     case Subscribe(uid) => {
