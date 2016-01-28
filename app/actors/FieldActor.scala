@@ -5,13 +5,16 @@ import play.libs.Akka
 
 object FieldActor {
   lazy val field = Akka.system().actorOf(Props[FieldActor])
+  case class Result(isCorrect: Boolean)
+  case class Subscribe(uid: String)
+  case class User(uid: String, continuationCorrect: Int)
 }
 
-case class Result(isCorrect: Boolean)
-case class Subscribe(uid: String)
-case class User(uid: String, continuationCorrect: Int)
 
 class FieldActor extends Actor {
+  import FieldActor.{Result, User, Subscribe}
+  import UserActor.{UpdateUser, UpdateUsers}
+
   var users = Map[ActorRef, User]()
 
   def receive = {
