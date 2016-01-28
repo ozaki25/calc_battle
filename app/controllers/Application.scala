@@ -7,17 +7,16 @@ import play.api.libs.json.JsValue
 
 import scala.{Left, Right}
 import scala.concurrent.Future
-
+import java.util.concurrent.atomic.AtomicInteger
 import actors.UserActor
 
 class Application extends Controller {
   val UID = "uid"
-  var counter = 0;
+  val counter = new AtomicInteger();
 
   def index = Action { implicit request =>
-    val uid = request.session.get(UID).getOrElse {
-      counter += 1
-      counter.toString
+    val uid: String = request.session.get(UID).getOrElse {
+      counter.incrementAndGet().toString()
     }
     Ok(views.html.index(uid)).withSession {
       request.session + (UID -> uid)
@@ -27,7 +26,7 @@ class Application extends Controller {
   def ws = WebSocket.tryAcceptWithActor[JsValue, JsValue] { implicit request =>
     Future.successful(request.session.get(UID) match {
       case None => Left(Forbidden)
-      case Some(uid) => Right(UserActor.props(uid))
+      case Some(uid) => Right(UserActor.props(new UserActor.UID(uid)))
     })
   }
 }
