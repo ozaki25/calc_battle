@@ -10,7 +10,6 @@ object FieldActor {
   case class User(uid: String, continuationCorrect: Int)
 }
 
-
 class FieldActor extends Actor {
   import FieldActor.{Result, User, Subscribe}
 
