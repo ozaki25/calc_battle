@@ -26,7 +26,7 @@ class Application extends Controller {
   def ws = WebSocket.tryAcceptWithActor[JsValue, JsValue] { implicit request =>
     Future.successful(request.session.get(UID) match {
       case None => Left(Forbidden)
-      case Some(uid) => Right(UserActor.props(uid))
+      case Some(uid) => Right(UserActor.props(new UserActor.UID(uid)))
     })
   }
 }
