@@ -12,20 +12,19 @@ object UserActor {
 
 
 class UserActor(uid: String, field: ActorRef, out: ActorRef) extends Actor {
-  import FieldActor.{Subscribe, Result}
   import UserActor.{UpdateUser, UpdateUsers}
 
   override def preStart() = {
-    FieldActor.field ! Subscribe(uid)
+    FieldActor.field ! FieldActor.Subscribe(uid)
   }
 
   def receive = {
     case js: JsValue => {
-      (js \ "result").validate[Boolean] foreach { field ! Result(_) }
+      (js \ "result").validate[Boolean] foreach { field ! FieldActor.Result(_) }
       val question = Json.obj("type" -> "question", "question" -> Map("a" -> random(), "b" -> random()))
       out ! question
     }
-    case Result(isCorrect) if sender == field => {
+    case FieldActor.Result(isCorrect) if sender == field => {
       val js = Json.obj("type" -> "result", "uid" -> uid, "isCorrect" -> isCorrect)
       out ! js
     }

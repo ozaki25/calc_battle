@@ -13,7 +13,6 @@ object FieldActor {
 
 class FieldActor extends Actor {
   import FieldActor.{Result, User, Subscribe}
-  import UserActor.{UpdateUser, UpdateUsers}
 
   var users = Map[ActorRef, User]()
 
@@ -26,18 +25,18 @@ class FieldActor extends Actor {
       val finish = updateUser.continuationCorrect >= 5
       users -= sender
       users += (sender -> updateUser)
-      users.keys foreach { _ ! UpdateUser(result, finish) }
+      users.keys foreach { _ ! UserActor.UpdateUser(result, finish) }
     }
     case Subscribe(uid) => {
       users += (sender -> User(uid, 0))
       context watch sender
       val results = (users.values map { u => u.uid -> u.continuationCorrect }).toMap[String, Int]
-      users.keys foreach { _ ! UpdateUsers(results) }
+      users.keys foreach { _ ! UserActor.UpdateUsers(results) }
     }
     case Terminated(user) => {
       users -= user
       val results = (users.values map { u => u.uid -> u.continuationCorrect }).toMap[String, Int]
-      users.keys foreach { _ ! UpdateUsers(results) }
+      users.keys foreach { _ ! UserActor.UpdateUsers(results) }
     }
   }
 }
