@@ -1,12 +1,11 @@
-package actors
+package com.example.calcbattle.examiner.actors
 
-import akka.actor.Actor
+import akka.actor.{Actor, Props}
 import akka.cluster.Cluster
-import models.Question
 
 object ExaminerActor {
-
-
+  def props = Props(new ExaminerActor)
+  val name = "ExaminerActor"
 }
 
 class ExaminerActor extends Actor {

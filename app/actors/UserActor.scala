@@ -4,19 +4,15 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.actor.{Actor, ActorRef, Props, ActorLogging}
 import play.api.libs.json.{Json, JsValue, Writes}
+import play.libs.Akka
 import models.Question
+import akka.routing.FromConfig
 import UserActor._
 
 object UserActor {
-  def props(uid: UID)(out: ActorRef) = Props(new UserActor(uid, FieldActor.field, out))
+  val workerRouter = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
 
-  val workerRouter = context.actorOf(FromConfig.props(Props[ExaminerActor]), name = "workerRouter")
-
-
-  val system = ActorSystem("ClusterSystem", config)
-  system.actorOf(Props[StatsWorker], name = "statsWorker")
-  system.actorOf(Props[StatsService], name = "statsService")
-
+  def props(uid: UID)(out: ActorRef) = Props(new UserActor(uid, FieldActor.field, out, workerRouter))
   case class User(uid: UID, continuationCorrect: Int)
   case class UpdateUsers(results: Set[User])
   case class UpdateUser(result: User, finish: Boolean)
@@ -37,13 +33,14 @@ object UserActor {
   }
 }
 
-class UserActor(uid: UID, field: ActorRef, out: ActorRef) extends Actor with ActorLogging {
+class UserActor(uid: UID, field: ActorRef, out: ActorRef, workerRouter: ActorRef) extends Actor with ActorLogging {
   override def preStart() = {
     FieldActor.field ! FieldActor.Subscribe(uid)
   }
 
   def receive = {
     case js: JsValue => {
+      workerRouter ! "test"
       (js \ "result").validate[Boolean] foreach { field ! FieldActor.Result(_) }
       val question = Json.obj("type" -> "question", "question" -> Question.create())
       out ! question
