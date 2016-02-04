@@ -7,5 +7,4 @@ object Question {
   def random() = Random.nextInt(90) + 10
 }
 
-
 case class Question(first: Int, second: Int)

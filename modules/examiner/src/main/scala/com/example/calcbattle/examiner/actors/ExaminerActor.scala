@@ -3,7 +3,6 @@ package com.example.calcbattle.examiner.actors
 import akka.actor.{Actor, Props}
 import akka.cluster.Cluster
 import com.example.calcbattle.examiner.models.Question
-import com.example.calcbattle.examiner.actors.ExaminerActor._
 
 object ExaminerActor {
   def props = Props(new ExaminerActor)
@@ -12,10 +11,10 @@ object ExaminerActor {
 }
 
 class ExaminerActor extends Actor {
+  import ExaminerActor.Create
+
   def receive = {
     case Create =>
       sender() ! Question.create()
-    case _ =>
-      println("examiner")
   }
 }

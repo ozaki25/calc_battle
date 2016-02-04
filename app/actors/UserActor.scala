@@ -14,10 +14,10 @@ object UserActor {
   val examiner = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
   def props(uid: UID)(out: ActorRef) = Props(new UserActor(uid, FieldActor.field, examiner, out))
 
-  case class User(uid: UID, continuationCorrect: Int)
-  case class UpdateUsers(results: Set[User])
-  case class UpdateUser(result: User, finish: Boolean)
   class UID(val id: String) extends AnyVal
+  case class User(uid: UID, continuationCorrect: Int)
+  case class UpdateUser(result: User, finish: Boolean)
+  case class UpdateUsers(results: Set[User])
 
   implicit val userWrites = new Writes[User] {
     def writes(user: User): JsValue = {
@@ -54,11 +54,11 @@ class UserActor(uid: UID, field: ActorRef, examiner: ActorRef, out: ActorRef) ex
       val question = Json.obj("type" -> "question", "question" -> q)
       out ! question
     }
-    case UpdateUser(user, finish) if sender == field => {
+    case UpdateUser(user, finish) => {
       val js = Json.obj("type" -> "updateUser", "user" -> user, "finish" -> finish)
       out ! js
     }
-    case UpdateUsers(users) if sender == field => {
+    case UpdateUsers(users) => {
       val js = Json.obj("type" -> "updateUsers", "users" -> users)
       out ! js
     }
