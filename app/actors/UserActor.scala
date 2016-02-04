@@ -1,18 +1,19 @@
 package actors
 
+import akka.actor.{Actor, ActorRef, Props, ActorLogging}
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
-import akka.actor.{Actor, ActorRef, Props, ActorLogging}
+import akka.routing.FromConfig
 import play.api.libs.json.{Json, JsValue, Writes}
 import play.libs.Akka
-import models.Question
-import akka.routing.FromConfig
 import UserActor._
+import com.example.calcbattle.examiner.actors.ExaminerActor
+import com.example.calcbattle.examiner.models.Question
 
 object UserActor {
-  val workerRouter = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
+  val examiner = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
+  def props(uid: UID)(out: ActorRef) = Props(new UserActor(uid, FieldActor.field, examiner, out))
 
-  def props(uid: UID)(out: ActorRef) = Props(new UserActor(uid, FieldActor.field, out, workerRouter))
   case class User(uid: UID, continuationCorrect: Int)
   case class UpdateUsers(results: Set[User])
   case class UpdateUser(result: User, finish: Boolean)
@@ -31,18 +32,26 @@ object UserActor {
       }.toMap)
     }
   }
+
+  implicit val questuinWrites = new Writes[Question] {
+    def writes(question: Question): JsValue = {
+      Json.obj("first" -> question.first, "second" -> question.second)
+    }
+  }
 }
 
-class UserActor(uid: UID, field: ActorRef, out: ActorRef, workerRouter: ActorRef) extends Actor with ActorLogging {
+class UserActor(uid: UID, field: ActorRef, examiner: ActorRef, out: ActorRef) extends Actor {
   override def preStart() = {
     FieldActor.field ! FieldActor.Subscribe(uid)
   }
 
   def receive = {
     case js: JsValue => {
-      workerRouter ! "test"
       (js \ "result").validate[Boolean] foreach { field ! FieldActor.Result(_) }
-      val question = Json.obj("type" -> "question", "question" -> Question.create())
+      examiner ! ExaminerActor.Create
+    }
+    case q: Question => {
+      val question = Json.obj("type" -> "question", "question" -> q)
       out ! question
     }
     case UpdateUser(user, finish) if sender == field => {

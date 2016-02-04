@@ -9,16 +9,14 @@ object Main extends App {
   args match {
     case Array(hostname, port) =>
       val config = ConfigFactory.parseString(
-                        s"""
+        s"""
            |akka.remote.netty.tcp.hostname = ${args(0)}
            |akka.remote.netty.tcp.port     = ${args(1)}
            |""".stripMargin
       ).withFallback(ConfigFactory.load())
 
       val system = ActorSystem("application", config)
-
       system.actorOf(ExaminerActor.props, ExaminerActor.name)
-
       system.awaitTermination()
 
     case _ =>

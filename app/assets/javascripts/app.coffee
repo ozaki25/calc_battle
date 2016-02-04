@@ -4,10 +4,10 @@ $ ->
     message = JSON.parse event.data
     switch message.type
       when 'question'
-        a = message.question.a
-        b = message.question.b
-        $('#question').html "#{a} + #{b}"
-        $('#answer').attr 'answer', a + b
+        first = message.question.first
+        second = message.question.second
+        $('#question').html "#{first} + #{second}"
+        $('#answer').attr 'answer', first + second
       when 'updateUser'
         for uid, continuationCorrect of message.user
           $("#uid_#{uid}").empty()
