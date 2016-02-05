@@ -7,7 +7,7 @@ import com.example.calcbattle.examiner.models.Question
 object ExaminerActor {
   def props = Props(new ExaminerActor)
   val name = "ExaminerActor"
-  case class Create()
+  case object Create
 }
 
 class ExaminerActor extends Actor {
