@@ -20,8 +20,7 @@ class FieldActor extends Actor {
       val user = users(sender)
       val updateUser = user.copy(continuationCorrect = if(isCorrect) user.continuationCorrect + 1 else 0)
       val finish = updateUser.continuationCorrect >= 5
-      users -= sender
-      users += (sender -> updateUser)
+      users = users.updated(sender, updateUser)
       users.keys foreach { _ ! UserActor.UpdateUser(updateUser, finish) }
     }
     case Subscribe(uid) => {
