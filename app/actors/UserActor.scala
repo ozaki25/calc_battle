@@ -33,7 +33,7 @@ object UserActor {
     }
   }
 
-  implicit val questuinWrites = new Writes[Question] {
+  implicit val questionWrites = new Writes[Question] {
     def writes(question: Question): JsValue = {
       Json.obj("first" -> question.first, "second" -> question.second)
     }
