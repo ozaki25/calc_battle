@@ -15,7 +15,7 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
       cache,
       ws,
       "com.typesafe.akka" %% "akka-cluster" % "2.4.1",
-      "com.typesafe.akka" % "akka-cluster-metrics_2.11" % "2.4.1",
+      "com.typesafe.akka" %% "akka-cluster-metrics" % "2.4.1",
       "com.typesafe.akka" %% "akka-slf4j" % "2.4.1",
       specs2 % Test
     ),
