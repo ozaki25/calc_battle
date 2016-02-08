@@ -1,6 +1,7 @@
 package com.example.calcbattle.user
 
 import akka.actor.ActorSystem
+import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings, ShardRegion}
 import com.example.calcbattle.user.actors.UserActor
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
@@ -18,6 +19,16 @@ object Main extends App {
         ).withFallback(ConfigFactory.load())
 
       val system = ActorSystem("application", config)
+
+/*
+      ClusterSharding(system).start(
+        typeName = UserActor.name,
+        entityProps = UserActor.props,
+        settings = ClusterShardingSettings(system),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId
+      )
+*/
       system.actorOf(UserActor.props, UserActor.name)
       Await.result(system.whenTerminated, Duration.Inf)
     case _ =>

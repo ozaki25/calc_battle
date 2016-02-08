@@ -6,6 +6,7 @@ import com.example.calcbattle.user.actors.UserActor.{Result, Subscribe}
 object UserActor {
   def props = Props(new UserActor)
   val name = "UserActor"
+
   class UID(val id: String) extends AnyVal
   case class Subscribe(uid: UID)
   case class Result(isCorrect: Boolean)

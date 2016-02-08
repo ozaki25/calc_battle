@@ -41,7 +41,8 @@ lazy val user = (project in file("modules/user"))
   .settings(
     name := s"""$namePrefix-user""",
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-cluster" % "2.4.1"
+      "com.typesafe.akka" %% "akka-cluster" % "2.4.1",
+      "com.typesafe.akka" %% "akka-cluster-sharding" % "2.4.1"
     ),
     fullRunInputTask(run, Compile, "com.example.calcbattle.user.Main", "127.0.0.1", "0"),
     fullRunTask(runSeed, Compile, "com.example.calcbattle.user.Main", "127.0.0.1", "2553")
