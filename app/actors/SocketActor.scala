@@ -6,13 +6,13 @@ import akka.cluster.ClusterEvent._
 import akka.routing.FromConfig
 import play.api.libs.json.{Json, JsValue, Writes}
 import play.libs.Akka
-import UserActor._
+import SocketActor._
 import com.example.calcbattle.examiner.actors.ExaminerActor
 import com.example.calcbattle.examiner.models.Question
 
-object UserActor {
+object SocketActor {
   val examiner = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
-  def props(uid: UID)(out: ActorRef) = Props(new UserActor(uid, FieldActor.field, examiner, out))
+  def props(uid: UID)(out: ActorRef) = Props(new SocketActor(uid, FieldActor.field, examiner, out))
 
   class UID(val id: String) extends AnyVal
   case class User(uid: UID, continuationCorrect: Int)
@@ -40,7 +40,7 @@ object UserActor {
   }
 }
 
-class UserActor(uid: UID, field: ActorRef, examiner: ActorRef, out: ActorRef) extends Actor {
+class SocketActor(uid: UID, field: ActorRef, examiner: ActorRef, out: ActorRef) extends Actor {
   override def preStart() = {
     FieldActor.field ! FieldActor.Subscribe(uid)
   }
