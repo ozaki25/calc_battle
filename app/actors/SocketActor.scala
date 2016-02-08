@@ -1,8 +1,6 @@
 package actors
 
 import akka.actor.{Actor, ActorRef, Props, ActorLogging}
-import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
 import akka.routing.FromConfig
 import play.api.libs.json.{Json, JsValue, Writes}
 import play.libs.Akka
@@ -11,8 +9,9 @@ import com.example.calcbattle.examiner.actors.ExaminerActor
 import com.example.calcbattle.examiner.models.Question
 
 object SocketActor {
-  val examiner = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
-  def props(uid: UID)(out: ActorRef) = Props(new SocketActor(uid, FieldActor.field, examiner, out))
+  val examinerRouter = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
+  val userRouter = Akka.system().actorOf(FromConfig.props(), name = "userRouter")
+  def props(uid: UID)(out: ActorRef) = Props(new SocketActor(uid, FieldActor.field, examinerRouter, userRouter, out))
 
   class UID(val id: String) extends AnyVal
   case class User(uid: UID, continuationCorrect: Int)
@@ -40,7 +39,7 @@ object SocketActor {
   }
 }
 
-class SocketActor(uid: UID, field: ActorRef, examiner: ActorRef, out: ActorRef) extends Actor {
+class SocketActor(uid: UID, field: ActorRef, examinerRouter: ActorRef, userRouter: ActorRef, out: ActorRef) extends Actor {
   override def preStart() = {
     FieldActor.field ! FieldActor.Subscribe(uid)
   }
@@ -48,7 +47,8 @@ class SocketActor(uid: UID, field: ActorRef, examiner: ActorRef, out: ActorRef) 
   def receive = {
     case js: JsValue => {
       (js \ "result").validate[Boolean] foreach { field ! FieldActor.Result(_) }
-      examiner ! ExaminerActor.Create
+      examinerRouter ! ExaminerActor.Create
+      userRouter ! "test"
     }
     case q: Question => {
       val question = Json.obj("type" -> "question", "question" -> q)

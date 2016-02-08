@@ -9,7 +9,9 @@ object UserActor {
 
 class UserActor extends Actor {
   def receive = {
-    case _ =>
-      println("test")
+    case a: String =>
+      println("----------------------")
+      println(a)
+      println("----------------------")
   }
 }
