@@ -36,4 +36,15 @@ lazy val examiner = (project in file("modules/examiner"))
     fullRunTask(runSeed, Compile, "com.example.calcbattle.examiner.Main", "127.0.0.1", "2552")
   )
 
+lazy val user = (project in file("modules/user"))
+  .settings(commonSettings: _*)
+  .settings(
+    name := s"""$namePrefix-user""",
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-cluster" % "2.4.1"
+    ),
+    fullRunInputTask(run, Compile, "com.example.calcbattle.user.Main", "127.0.0.1", "0"),
+    fullRunTask(runSeed, Compile, "com.example.calcbattle.user.Main", "127.0.0.1", "2553")
+  )
+
 lazy val runSeed = TaskKey[Unit]("run-seed", "run one node as seed.")
