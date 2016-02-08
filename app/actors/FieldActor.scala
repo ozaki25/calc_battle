@@ -2,7 +2,8 @@ package actors
 
 import akka.actor.{Actor, ActorRef, Props, Terminated}
 import play.libs.Akka
-import SocketActor.{UID, User}
+import SocketActor.User
+import com.example.calcbattle.user.actors.UserActor.UID
 
 object FieldActor {
   lazy val field = Akka.system().actorOf(Props[FieldActor])

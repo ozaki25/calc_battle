@@ -7,13 +7,14 @@ import play.libs.Akka
 import SocketActor._
 import com.example.calcbattle.examiner.actors.ExaminerActor
 import com.example.calcbattle.examiner.models.Question
+import com.example.calcbattle.user.actors.UserActor
+import com.example.calcbattle.user.actors.UserActor.UID
 
 object SocketActor {
   val examinerRouter = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
   val userRouter = Akka.system().actorOf(FromConfig.props(), name = "userRouter")
   def props(uid: UID)(out: ActorRef) = Props(new SocketActor(uid, FieldActor.field, examinerRouter, userRouter, out))
 
-  class UID(val id: String) extends AnyVal
   case class User(uid: UID, continuationCorrect: Int)
   case class UpdateUser(result: User, finish: Boolean)
   case class UpdateUsers(results: Set[User])
@@ -41,12 +42,16 @@ object SocketActor {
 
 class SocketActor(uid: UID, field: ActorRef, examinerRouter: ActorRef, userRouter: ActorRef, out: ActorRef) extends Actor {
   override def preStart() = {
+    userRouter ! UserActor.Subscribe(uid)
     FieldActor.field ! FieldActor.Subscribe(uid)
   }
 
   def receive = {
     case js: JsValue => {
-      (js \ "result").validate[Boolean] foreach { field ! FieldActor.Result(_) }
+      (js \ "result").validate[Boolean] foreach { isCorrect =>
+        userRouter ! UserActor.Result(isCorrect)
+        field ! FieldActor.Result(isCorrect)
+      }
       examinerRouter ! ExaminerActor.Create
       userRouter ! "test"
     }

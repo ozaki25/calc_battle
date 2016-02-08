@@ -9,6 +9,7 @@ import scala.{Left, Right}
 import scala.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
 import actors.SocketActor
+import com.example.calcbattle.user.actors.UserActor.UID
 
 class Application extends Controller {
   val UID = "uid"
@@ -26,7 +27,7 @@ class Application extends Controller {
   def ws = WebSocket.tryAcceptWithActor[JsValue, JsValue] { implicit request =>
     Future.successful(request.session.get(UID) match {
       case None => Left(Forbidden)
-      case Some(uid) => Right(SocketActor.props(new SocketActor.UID(uid)))
+      case Some(uid) => Right(SocketActor.props(new UID(uid)))
     })
   }
 }
