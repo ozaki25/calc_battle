@@ -1,6 +1,6 @@
 package com.example.calcbattle.user
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorPath, ActorSystem}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings, ShardRegion}
 import com.example.calcbattle.user.actors.UserActor
 import com.typesafe.config.ConfigFactory
@@ -19,16 +19,11 @@ object Main extends App {
         ).withFallback(ConfigFactory.load())
 
       val system = ActorSystem("application", config)
-
-/*
-      ClusterSharding(system).start(
-        typeName = UserActor.name,
-        entityProps = UserActor.props,
-        settings = ClusterShardingSettings(system),
-        extractEntityId = extractEntityId,
-        extractShardId = extractShardId
-      )
-*/
+      /*UserActor.startupSharedJournal(
+        system, startStore = (port == "2551"),
+        path = ActorPath.fromString("akka.tcp://application@127.0.0.1:2551/user/store")
+      )*/
+      UserActor.startupSharding(system)
       system.actorOf(UserActor.props, UserActor.name)
       Await.result(system.whenTerminated, Duration.Inf)
     case _ =>

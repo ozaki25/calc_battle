@@ -49,7 +49,7 @@ class SocketActor(uid: UID, field: ActorRef, examinerRouter: ActorRef, userRoute
   def receive = {
     case js: JsValue => {
       (js \ "result").validate[Boolean] foreach { isCorrect =>
-        userRouter ! UserActor.Result(isCorrect)
+        userRouter ! UserActor.Result(uid, isCorrect)
         field ! FieldActor.Result(isCorrect)
       }
       examinerRouter ! ExaminerActor.Create
