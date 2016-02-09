@@ -19,10 +19,6 @@ object Main extends App {
         ).withFallback(ConfigFactory.load())
 
       val system = ActorSystem("application", config)
-      /*UserActor.startupSharedJournal(
-        system, startStore = (port == "2551"),
-        path = ActorPath.fromString("akka.tcp://application@127.0.0.1:2551/user/store")
-      )*/
       UserActor.startupSharding(system)
       system.actorOf(UserActor.props, UserActor.name)
       Await.result(system.whenTerminated, Duration.Inf)
