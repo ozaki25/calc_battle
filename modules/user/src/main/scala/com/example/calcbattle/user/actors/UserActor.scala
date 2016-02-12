@@ -2,7 +2,7 @@ package com.example.calcbattle.user.actors
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.cluster.sharding.{ShardRegion, ClusterShardingSettings, ClusterSharding}
-import com.example.calcbattle.user.actors.FieldActor.Subscribe
+import com.example.calcbattle.user.actors.FieldActor.Join
 
 object UserActor {
   def props = Props(new UserActor)
@@ -10,11 +10,11 @@ object UserActor {
   val nrOfShards = 50
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg @ Subscribe(uid) => (uid.id, msg)
+    case msg @ Join(uid) => (uid.id, msg)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case msg @ Subscribe(uid) => (uid.hashCode % nrOfShards).toString
+    case msg @ Join(uid) => (uid.hashCode % nrOfShards).toString
   }
 
   def startupSharding(system: ActorSystem, field :ActorRef) = {

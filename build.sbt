@@ -44,8 +44,10 @@ lazy val user = (project in file("modules/user"))
       "com.typesafe.akka" %% "akka-cluster" % "2.4.1",
       "com.typesafe.akka" %% "akka-cluster-sharding" % "2.4.1",
       "com.typesafe.akka" %% "akka-persistence" % "2.4.1",
+      "com.typesafe.akka" %% "akka-cluster-tools" % "2.4.1",
       "org.iq80.leveldb"  %  "leveldb" % "0.7",
       "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8"
+
     ),
     fullRunInputTask(run, Compile, "com.example.calcbattle.user.Main", "127.0.0.1", "0"),
     fullRunTask(runSeed, Compile, "com.example.calcbattle.user.Main", "127.0.0.1", "2553")
