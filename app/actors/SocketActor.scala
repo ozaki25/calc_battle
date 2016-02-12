@@ -7,7 +7,7 @@ import play.libs.Akka
 import SocketActor._
 import com.example.calcbattle.examiner.actors.ExaminerActor
 import com.example.calcbattle.examiner.models.Question
-import com.example.calcbattle.user.actors.FieldActor.UID
+import com.example.calcbattle.user.actors.FieldActor.{UID,Join}
 
 object SocketActor {
   val examinerRouter = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
@@ -41,7 +41,7 @@ object SocketActor {
 
 class SocketActor(uid: UID, field: ActorRef, examinerRouter: ActorRef, userRouter: ActorRef, out: ActorRef) extends Actor {
   override def preStart() = {
-    userRouter ! com.example.calcbattle.user.actors.FieldActor.Subscribe(uid)
+    userRouter ! Join(uid)
     FieldActor.field ! FieldActor.Subscribe(uid)
   }
 
