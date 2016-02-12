@@ -1,14 +1,14 @@
 package com.example.calcbattle.user.actors
 
-import akka.actor.Props
+import akka.actor.{ActorRef, Props}
 import akka.persistence.PersistentActor
-import com.example.calcbattle.user.actors.UserActor.{Result, Subscribe}
+import com.example.calcbattle.user.actors.FieldActor.Subscribe
 
 object UserWorker {
-  def props = Props(new UserWorker)
+  def props(field: ActorRef) = Props(new UserWorker(field))
   val name = "UserWorker"
 }
-class UserWorker extends PersistentActor {
+class UserWorker(field: ActorRef) extends PersistentActor {
   override def persistenceId: String = self.path.parent.name + "-" + self.path.name
   override def receiveRecover: Receive = {
     case _ =>
@@ -16,13 +16,8 @@ class UserWorker extends PersistentActor {
   }
   override def receiveCommand = {
     case Subscribe(uid) =>
-      println("----------------------")
-      println(uid)
-      println("----------------------")
-    case Result(uid, isCorrect) =>
-      println("----------------------")
-      println(uid)
-      println(isCorrect)
+      println("------userWorker------")
+      field forward Subscribe(uid)
       println("----------------------")
   }
 }

@@ -9,7 +9,7 @@ import scala.{Left, Right}
 import scala.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
 import actors.SocketActor
-import com.example.calcbattle.user.actors.UserActor.UID
+import com.example.calcbattle.user.actors.FieldActor.UID
 
 class Application extends Controller {
   val UID = "uid"
