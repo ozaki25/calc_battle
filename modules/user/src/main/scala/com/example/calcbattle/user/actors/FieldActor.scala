@@ -8,16 +8,23 @@ object FieldActor {
   val name = "FieldActor"
 
   class UID(val id: String) extends AnyVal
-  case class Subscribe(uid: UID)
+  case class Join(uid: UID)
 }
 
 class FieldActor extends Actor {
-  import FieldActor.Subscribe
+  import akka.cluster.pubsub.DistributedPubSub
+  import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck}
+  import FieldActor.Join
+
+  override def preStart() = {
+    val mediator = DistributedPubSub(context.system).mediator
+    mediator ! Subscribe("userJoin", self)
+  }
 
   var users = Map[ActorRef, UID]()
 
   def receive = {
-    case Subscribe(uid) =>
+    case Join(uid) =>
       println("------fieldActor------")
       println(users)
       users += (sender -> uid)
@@ -30,5 +37,7 @@ class FieldActor extends Actor {
       users -= user
       println(users)
       println("----------------------")
+    case SubscribeAck(Subscribe("userJoin", None, `self`)) =>
+      println("subscribing")
   }
 }
