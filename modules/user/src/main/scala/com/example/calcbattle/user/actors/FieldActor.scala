@@ -9,12 +9,13 @@ object FieldActor {
 
   class UID(val id: String) extends AnyVal
   case class Join(uid: UID)
+  case class Participation(users: Set[UID])
 }
 
 class FieldActor extends Actor {
   import akka.cluster.pubsub.DistributedPubSub
   import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck}
-  import FieldActor.Join
+  import FieldActor.{Join, Participation}
 
   override def preStart() = {
     val mediator = DistributedPubSub(context.system).mediator
@@ -25,14 +26,15 @@ class FieldActor extends Actor {
 
   def receive = {
     case Join(uid) =>
-      println("------fieldActor------")
+      println("------fieldActor_join------")
       println(users)
       users += (sender -> uid)
       println(users)
       context watch sender
+      sender() ! Participation(users.values.toSet)
       println("----------------------")
     case Terminated(user) =>
-      println("------fieldActor------")
+      println("------fieldActor_terminated------")
       println(users)
       users -= user
       println(users)

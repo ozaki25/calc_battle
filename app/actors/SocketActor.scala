@@ -7,7 +7,7 @@ import play.libs.Akka
 import SocketActor._
 import com.example.calcbattle.examiner.actors.ExaminerActor
 import com.example.calcbattle.examiner.models.Question
-import com.example.calcbattle.user.actors.FieldActor.{UID,Join}
+import com.example.calcbattle.user.actors.FieldActor.{UID, Join}
 
 object SocketActor {
   val examinerRouter = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")

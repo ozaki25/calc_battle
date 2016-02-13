@@ -12,7 +12,6 @@ class UserWorker(field: ActorRef) extends PersistentActor {
   import akka.cluster.pubsub.DistributedPubSub
   import akka.cluster.pubsub.DistributedPubSubMediator.Publish
 
-
   override def persistenceId: String = self.path.parent.name + "-" + self.path.name
   override def receiveRecover: Receive = {
     case _ =>
@@ -20,9 +19,13 @@ class UserWorker(field: ActorRef) extends PersistentActor {
   }
   override def receiveCommand = {
     case Join(uid) =>
-      println("------userWorker------")
+      println("------userWorker_join------")
       val mediator = DistributedPubSub(context.system).mediator
-      mediator ! Publish("userJoin", Join(uid))
+      mediator forward  Publish("userJoin", Join(uid))
+      println("----------------------")
+    case msg =>
+      println("------userWorker_msg------")
+      println(msg)
       println("----------------------")
   }
 }
