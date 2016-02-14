@@ -46,23 +46,19 @@ class SocketActor(uid: UID, field: ActorRef, examinerRouter: ActorRef, userRoute
   }
 
   def receive = {
-    case js: JsValue => {
+    case js: JsValue =>
       (js \ "result").validate[Boolean] foreach { isCorrect =>
         field ! FieldActor.Result(isCorrect)
       }
       examinerRouter ! ExaminerActor.Create
-    }
-    case q: Question => {
+    case q: Question =>
       val question = Json.obj("type" -> "question", "question" -> q)
       out ! question
-    }
-    case UpdateUser(user, finish) => {
+    case UpdateUser(user, finish) =>
       val js = Json.obj("type" -> "updateUser", "user" -> user, "finish" -> finish)
       out ! js
-    }
-    case UpdateUsers(users) => {
+    case UpdateUsers(users) =>
       val js = Json.obj("type" -> "updateUsers", "users" -> users)
       out ! js
-    }
   }
 }
