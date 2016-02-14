@@ -32,6 +32,7 @@ class UserActor extends Actor {
   def receive = {
     case msg =>
       println("------userActor------")
+      println(msg)
       val shardRegion = ClusterSharding(context.system).shardRegion(UserWorker.name)
       shardRegion forward msg
       println("---------------------")

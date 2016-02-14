@@ -19,7 +19,7 @@ class FieldActor extends Actor {
 
   override def preStart() = {
     val mediator = DistributedPubSub(context.system).mediator
-    mediator ! Subscribe("userJoin", self)
+    mediator ! Subscribe("join", self)
   }
 
   var users = Map[ActorRef, UID]()
@@ -39,7 +39,7 @@ class FieldActor extends Actor {
       users -= user
       println(users)
       println("----------------------")
-    case SubscribeAck(Subscribe("userJoin", None, `self`)) =>
+    case SubscribeAck(Subscribe("join", None, `self`)) =>
       println("subscribing")
   }
 }
