@@ -7,7 +7,7 @@ import play.libs.Akka
 import SocketActor._
 import com.example.calcbattle.examiner.actors.ExaminerActor
 import com.example.calcbattle.examiner.models.Question
-import com.example.calcbattle.user.actors.FieldActor.{UID, Join}
+import com.example.calcbattle.user.actors.FieldActor.{Participation, UID, Join}
 
 object SocketActor {
   val examinerRouter = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
@@ -60,5 +60,7 @@ class SocketActor(uid: UID, field: ActorRef, examinerRouter: ActorRef, userRoute
     case UpdateUsers(users) =>
       val js = Json.obj("type" -> "updateUsers", "users" -> users)
       out ! js
+    case Participation(users) =>
+      println(users)
   }
 }
