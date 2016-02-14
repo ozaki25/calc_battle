@@ -61,6 +61,10 @@ class SocketActor(uid: UID, field: ActorRef, examinerRouter: ActorRef, userRoute
       val js = Json.obj("type" -> "updateUsers", "users" -> users)
       out ! js
     case Participation(users) =>
+      println("------SocketActor_Participation------")
       println(users)
+      val uids: Set[String] = users map { _.id }
+      val js = Json.obj("type" -> "participation", "uids" -> uids)
+      out ! js
   }
 }
