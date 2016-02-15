@@ -10,6 +10,7 @@ object UserWorker {
 
   case class Result(uid: UID, isCorrect: Boolean)
   case class UpdateUser(uid: UID, continuationCorrect: Int)
+  case class Get(uid: UID)
 
   sealed trait Event
   case class Joined(uid: UID, socketActor: ActorRef) extends Event
@@ -59,6 +60,8 @@ class UserWorker(field: ActorRef) extends PersistentActor {
       println("------userWorker_updateUser------")
       socketActor ! u
       println("----------------------")
+    case Get(uid) =>
+      sender ! UpdateUser(uid, continuationCorrect)
     case Terminated(user) =>
       println("------userWorker_terminated------")
       context.stop(self)

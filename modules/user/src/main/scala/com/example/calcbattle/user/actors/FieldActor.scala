@@ -9,7 +9,7 @@ object FieldActor {
 
   case class UID(val id: String) extends AnyVal
   case class Join(uid: UID)
-  case class Participation(users: Set[UID])
+  case class Participation(userWorkers: Set[UID])
 }
 
 class FieldActor extends Actor {
@@ -30,7 +30,7 @@ class FieldActor extends Actor {
       users += (sender -> uid)
       println(users)
       context watch sender
-      sender ! Participation(users.values.toSet)
+      sender ! Participation(users.valuesIterator.toSet)
       println("----------------------")
     case Terminated(user) =>
       println("------fieldActor_terminated------")

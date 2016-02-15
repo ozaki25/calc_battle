@@ -11,11 +11,13 @@ object UserActor {
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case msg @ FieldActor.Join(uid) => (uid.id, msg)
     case msg @ UserWorker.Result(uid, _) => (uid.id, msg)
+    case msg @ UserWorker.Get(uid) => (uid.id, msg)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case msg @ FieldActor.Join(uid) => (uid.hashCode % nrOfShards).toString
     case msg @ UserWorker.Result(uid, _) => (uid.hashCode % nrOfShards).toString
+    case msg @ UserWorker.Get(uid) => (uid.hashCode % nrOfShards).toString
   }
 
   def startupSharding(system: ActorSystem, field :ActorRef) = {

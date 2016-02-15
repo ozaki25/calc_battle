@@ -15,6 +15,13 @@ $ ->
         updateStar(user)
         finishEffect(user.uid) if message.finish
         console.log "uid: #{user.uid}, continuationCorrect: #{user.continuationCorrect}, finish: #{message.finish}"
+      when 'updateUser'
+        $('#users').empty()
+        for user in message.users
+          user = message.user
+          updateStar(user)
+          finishEffect(user.uid) if message.finish
+          console.log "uid: #{user.uid}, continuationCorrect: #{user.continuationCorrect}, finish: #{message.finish}"
       when 'participation'
         $('#users').html(
           for uid in message.uids

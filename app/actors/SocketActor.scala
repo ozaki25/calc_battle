@@ -43,16 +43,52 @@ class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out:
     case q: Question =>
       val question = Json.obj("type" -> "question", "question" -> q)
       out ! question
-    case FieldActor.Participation(users) =>
-      println(users)
-      val uids = users map { _.id }
-      val js = Json.obj("type" -> "participation", "uids" -> uids)
-      out ! js
+    case FieldActor.Participation(userWorkers) =>
+      println(userWorkers)
+      val handler = context.actorOf(UsersHandler.props(userWorkers.size, replyTo = self))
+      userWorkers.foreach { uid =>
+        userRouter.tell(UserWorker.Get(uid), handler)
+      }
     case u:UserWorker.UpdateUser =>
       println(u)
       val js = Json.obj("type" -> "updateUser", "user" -> u)
       out ! js
+    case UsersHandler.UpdateUsers(users) =>
+      println(users)
+      val js = Json.obj("type" -> "updateUsers", "users" -> users)
+      out ! js
     case msg =>
       println(msg)
+  }
+}
+
+
+object UsersHandler {
+  def props(userSize: Int, replyTo: ActorRef) = Props(new UserHandler(userSize, replyTo))
+  case class UpdateUsers(users: Set[UserWorker.UpdateUser])
+  case object UserGetTimeout
+}
+
+class UserHandler(userSize: Int, replyTo: ActorRef) extends Actor {
+  import akka.actor.ReceiveTimeout
+  import scala.concurrent.duration._
+  import UsersHandler._
+
+  context.setReceiveTimeout(5 seconds)
+
+  var users: Set[UserWorker.UpdateUser] = Set()
+
+  def receive = {
+    case user: UserWorker.UpdateUser =>
+      context.setReceiveTimeout(1 second)
+      users += user
+      if(users.size == userSize) {
+        replyTo ! users
+        context.stop(self)
+      }
+    case e: ReceiveTimeout =>
+      replyTo ! UserGetTimeout
+      context.stop(self)
+
   }
 }
