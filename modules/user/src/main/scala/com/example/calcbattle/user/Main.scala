@@ -18,9 +18,13 @@ object Main extends App {
         ).withFallback(ConfigFactory.load())
 
       val system = ActorSystem("application", config)
+
+      FieldActor.startupSharding(system)
       val field = system.actorOf(FieldActor.props, FieldActor.name)
+
       system.actorOf(UserActor.props, UserActor.name)
       UserActor.startupSharding(system, field)
+
       Await.result(system.whenTerminated, Duration.Inf)
     case _ =>
       throw new IllegalArgumentException("引数には <ホスト名> <ポート番号> を指定してください。")
