@@ -2,25 +2,24 @@ $ ->
   ws = new WebSocket $('body').data 'ws-url'
   ws.onmessage = (event) ->
     message = JSON.parse event.data
+    console.log message
     switch message.type
       when 'question'
         first = message.question.first
         second = message.question.second
         $('#question').html "#{first} + #{second}"
         $('#answer').attr 'answer', first + second
-        console.log "#{first} + #{second}"
       when 'updateUser'
         user = message.user
         $("#uid_#{user.uid}").empty()
         updateStar(user)
         finishEffect(user.uid) if message.finish
-        console.log "uid: #{user.uid}, continuationCorrect: #{user.continuationCorrect}, finish: #{message.finish}"
-      when 'participation'
-        $('#users').html(
-          for uid in message.uids
-            "<li id=\"uid_#{uid}\" class=\"list-group-item\">ユーザ#{uid}</li>"
-        )
-        console.log "uids: #{message.uids}"
+      when 'updateUsers'
+        $('#users').empty()
+        for user in message.users
+          $('#users').append "<li id=\"uid_#{user.uid}\" class=\"list-group-item\"></li>"
+          updateStar(user)
+          finishEffect(user.uid) if message.finish
       else
         console.log "[Error] unmatch message: #{message}"
 

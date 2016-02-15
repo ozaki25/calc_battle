@@ -9,7 +9,7 @@ object FieldActor {
 
   case class UID(val id: String) extends AnyVal
   case class Join(uid: UID)
-  case class Participation(users: Set[UID])
+  case class Participation(uids: Set[UID])
 }
 
 class FieldActor extends Actor {
