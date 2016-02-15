@@ -1,7 +1,7 @@
 package com.example.calcbattle.user.actors
 
 import akka.actor.{Actor, ActorRef, Props, Terminated}
-import com.example.calcbattle.user.actors.FieldActor.UID
+import com.example.calcbattle.user.actors.FieldActor._
 
 object FieldActor {
   def props = Props(new FieldActor)
@@ -15,11 +15,10 @@ object FieldActor {
 class FieldActor extends Actor {
   import akka.cluster.pubsub.DistributedPubSub
   import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck}
-  import FieldActor.{Join, Participation}
 
   override def preStart() = {
     val mediator = DistributedPubSub(context.system).mediator
-    mediator ! Subscribe("userJoin", self)
+    mediator ! Subscribe("join", self)
   }
 
   var users = Map[ActorRef, UID]()
@@ -31,7 +30,7 @@ class FieldActor extends Actor {
       users += (sender -> uid)
       println(users)
       context watch sender
-      sender() ! Participation(users.values.toSet)
+      sender ! Participation(users.values.toSet)
       println("----------------------")
     case Terminated(user) =>
       println("------fieldActor_terminated------")
@@ -39,7 +38,7 @@ class FieldActor extends Actor {
       users -= user
       println(users)
       println("----------------------")
-    case SubscribeAck(Subscribe("userJoin", None, `self`)) =>
+    case SubscribeAck(Subscribe("join", None, `self`)) =>
       println("subscribing")
   }
 }

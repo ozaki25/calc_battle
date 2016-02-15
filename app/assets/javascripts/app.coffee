@@ -13,18 +13,11 @@ $ ->
           $("#uid_#{uid}").empty()
           updateStar(uid, continuationCorrect)
           finishEffect(uid) if message.finish
-      when 'updateUsers'
-        $('#users').empty()
-        for uid, continuationCorrect of message.users
-          $('#users').append "<li id=\"uid_#{uid}\" class=\"list-group-item\"></li>"
-          updateStar(uid, continuationCorrect)
       when 'participation'
-        $('#tmp_uids').remove()
-        $('#users').after """
-          <ul id="tmp_uids" class="list-group">
-            <li class="list-group-item">UIDs: #{message.uids}</li>
-          </ul>
-        """
+        $('#users').html(
+          for uid in message.uids
+            "<li class=\"list-group-item\">ユーザ#{uid}</li>"
+        )
       else
         console.log "[Error] unmatch message: #{message}"
 

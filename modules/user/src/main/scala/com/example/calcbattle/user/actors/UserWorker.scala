@@ -1,16 +1,25 @@
 package com.example.calcbattle.user.actors
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ActorRef, Props, Terminated}
 import akka.persistence.PersistentActor
 
 object UserWorker {
   def props(field: ActorRef) = Props(new UserWorker(field))
   val name = "UserWorker"
 }
+
 class UserWorker(field: ActorRef) extends PersistentActor {
-  import com.example.calcbattle.user.actors.FieldActor.Join
   import akka.cluster.pubsub.DistributedPubSub
-  import akka.cluster.pubsub.DistributedPubSubMediator.Publish
+  import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe}
+
+  override def preStart() = println("----------UserWorker_Start-------------")
+
+  override def postStop() = println("----------UserWorker_Stop--------------")
+
+  val mediator = DistributedPubSub(context.system).mediator
+  mediator ! Subscribe("update", self)
+
+  var socketActor: ActorRef = null
 
   override def persistenceId: String = self.path.parent.name + "-" + self.path.name
   override def receiveRecover: Receive = {
@@ -18,10 +27,19 @@ class UserWorker(field: ActorRef) extends PersistentActor {
       println("receiveRecover")
   }
   override def receiveCommand = {
-    case Join(uid) =>
+    case FieldActor.Join(uid) =>
       println("------userWorker_join------")
-      val mediator = DistributedPubSub(context.system).mediator
-      mediator forward  Publish("userJoin", Join(uid))
+      socketActor = sender
+      context watch socketActor
+      mediator ! Publish("join", FieldActor.Join(uid))
+      println("----------------------")
+    case p:FieldActor.Participation =>
+      println("------userWorker_participation------")
+      socketActor ! p
+      println("----------------------")
+    case Terminated(user) =>
+      println("------userWorker_terminated------")
+      context.stop(self)
       println("----------------------")
     case msg =>
       println("------userWorker_msg------")

@@ -1,7 +1,6 @@
 package com.example.calcbattle.user
 
-import akka.actor.{ActorPath, ActorSystem}
-import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings, ShardRegion}
+import akka.actor.ActorSystem
 import com.example.calcbattle.user.actors.{FieldActor, UserActor}
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await

@@ -2,7 +2,6 @@ package com.example.calcbattle.user.actors
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.cluster.sharding.{ShardRegion, ClusterShardingSettings, ClusterSharding}
-import com.example.calcbattle.user.actors.FieldActor.Join
 
 object UserActor {
   def props = Props(new UserActor)
@@ -10,11 +9,11 @@ object UserActor {
   val nrOfShards = 50
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg @ Join(uid) => (uid.id, msg)
+    case msg @ FieldActor.Join(uid) => (uid.id, msg)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case msg @ Join(uid) => (uid.hashCode % nrOfShards).toString
+    case msg @ FieldActor.Join(uid) => (uid.hashCode % nrOfShards).toString
   }
 
   def startupSharding(system: ActorSystem, field :ActorRef) = {
@@ -32,6 +31,7 @@ class UserActor extends Actor {
   def receive = {
     case msg =>
       println("------userActor------")
+      println(msg)
       val shardRegion = ClusterSharding(context.system).shardRegion(UserWorker.name)
       shardRegion forward msg
       println("---------------------")
