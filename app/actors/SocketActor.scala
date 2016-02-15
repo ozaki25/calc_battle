@@ -13,7 +13,8 @@ import com.example.calcbattle.user.actors.UserWorker
 
 object SocketActor {
   val examinerRouter = Akka.system().actorOf(FromConfig.props(), name = "examinerRouter")
-  val userRouter = Akka.system().actorOf(FromConfig.props(), name = "userRouter")
+  val userRouter     = Akka.system().actorOf(FromConfig.props(), name = "userRouter")
+
   def props(uid: UID)(out: ActorRef) = Props(new SocketActor(uid, examinerRouter, userRouter, out))
 
   implicit val userWrites = new Writes[UserWorker.UpdateUser] {
@@ -29,7 +30,7 @@ object SocketActor {
   }
 }
 
-class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out: ActorRef) extends Actor {
+class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out: ActorRef) extends Actor with ActorLogging {
   override def preStart() = {
     userRouter ! FieldActor.Join(uid)
   }
@@ -44,32 +45,29 @@ class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out:
       val question = Json.obj("type" -> "question", "question" -> q)
       out ! question
     case FieldActor.Participation(uids) =>
-      println(uids)
       val handler = context.actorOf(UsersHandler.props(uids.size, replyTo = self))
       uids.foreach { uid =>
         userRouter.tell(UserWorker.Get(uid), handler)
       }
     case u:UserWorker.UpdateUser =>
-      println(u)
       val js = Json.obj("type" -> "updateUser", "user" -> u)
       out ! js
     case UsersHandler.UpdateUsers(users) =>
-      println(users)
       val js = Json.obj("type" -> "updateUsers", "users" -> users)
       out ! js
-    case msg =>
-      println(msg)
+    case UsersHandler.UsersGetTimeout =>
+      log.warning("ユーザ一覧を取得できませんでした。")
   }
 }
 
 
 object UsersHandler {
-  def props(userSize: Int, replyTo: ActorRef) = Props(new UserHandler(userSize, replyTo))
+  def props(userSize: Int, replyTo: ActorRef) = Props(new UsersHandler(userSize, replyTo))
   case class UpdateUsers(users: Set[UserWorker.UpdateUser])
-  case object UserGetTimeout
+  case object UsersGetTimeout
 }
 
-class UserHandler(userSize: Int, replyTo: ActorRef) extends Actor {
+class UsersHandler(userSize: Int, replyTo: ActorRef) extends Actor {
   import akka.actor.ReceiveTimeout
   import scala.concurrent.duration._
   import UsersHandler._
@@ -87,7 +85,7 @@ class UserHandler(userSize: Int, replyTo: ActorRef) extends Actor {
         context.stop(self)
       }
     case e: ReceiveTimeout =>
-      replyTo ! UserGetTimeout
+      replyTo ! UsersGetTimeout
       context.stop(self)
 
   }

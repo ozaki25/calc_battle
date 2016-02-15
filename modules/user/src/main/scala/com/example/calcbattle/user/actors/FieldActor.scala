@@ -1,7 +1,6 @@
 package com.example.calcbattle.user.actors
 
-import akka.actor.{Actor, ActorRef, Props, Terminated}
-import com.example.calcbattle.user.actors.FieldActor._
+import akka.actor.{ActorRef, ActorLogging, Actor, Props, Terminated}
 
 object FieldActor {
   def props = Props(new FieldActor)
@@ -12,9 +11,10 @@ object FieldActor {
   case class Participation(uids: Set[UID])
 }
 
-class FieldActor extends Actor {
+class FieldActor extends Actor with ActorLogging {
   import akka.cluster.pubsub.DistributedPubSub
   import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck}
+  import com.example.calcbattle.user.actors.FieldActor._
 
   override def preStart() = {
     val mediator = DistributedPubSub(context.system).mediator
@@ -25,21 +25,13 @@ class FieldActor extends Actor {
 
   def receive = {
     case Join(uid) =>
-      println("------fieldActor_join------")
-      println(users)
       users += (sender -> uid)
-      println(users)
       context watch sender
       context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users.values.toSet)
-      println("----------------------")
     case Terminated(user) =>
-      println("------fieldActor_terminated------")
-      println(users)
       users -= user
-      println(users)
       context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users.values.toSet)
-      println("----------------------")
-    case SubscribeAck(Subscribe("join", None, `self`)) =>
-      println("----FieldActor subscribing Join----")
+    case SubscribeAck(Subscribe("join", None, self)) =>
+      log.info("FieldActor subscribing 'join'")
   }
 }

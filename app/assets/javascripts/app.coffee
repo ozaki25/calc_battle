@@ -46,4 +46,5 @@ $ ->
       $(this).val ''
 
   $('#start').click ->
-      ws.send JSON.stringify { start: true }
+    $('#answer').removeAttr 'disabled'
+    ws.send JSON.stringify { start: true }
