@@ -8,27 +8,30 @@ $ ->
         second = message.question.second
         $('#question').html "#{first} + #{second}"
         $('#answer').attr 'answer', first + second
+        console.log "#{first} + #{second}"
       when 'updateUser'
-        for uid, continuationCorrect of message.user
-          $("#uid_#{uid}").empty()
-          updateStar(uid, continuationCorrect)
-          finishEffect(uid) if message.finish
+        user = message.user
+        $("#uid_#{user.uid}").empty()
+        updateStar(user)
+        finishEffect(user.uid) if message.finish
+        console.log "uid: #{user.uid}, continuationCorrect: #{user.continuationCorrect}, finish: #{message.finish}"
       when 'participation'
         $('#users').html(
           for uid in message.uids
-            "<li class=\"list-group-item\">ユーザ#{uid}</li>"
+            "<li id=\"uid_#{uid}\" class=\"list-group-item\">ユーザ#{uid}</li>"
         )
+        console.log "uids: #{message.uids}"
       else
         console.log "[Error] unmatch message: #{message}"
 
-  updateStar = (uid, continuationCorrect) ->
-    $("#uid_#{uid}").append "ユーザ#{uid} "
-    unless continuationCorrect is 0
-      for i in [1..continuationCorrect]
-        $("#uid_#{uid}").append "<span class=\"glyphicon glyphicon-star\" aria-hidden=\"true\"></span>"
-    unless continuationCorrect is 5
-      for i in [1..(5 - continuationCorrect)]
-        $("#uid_#{uid}").append "<span class=\"glyphicon glyphicon-star-empty\" aria-hidden=\"true\"></span>"
+  updateStar = (user) ->
+    $("#uid_#{user.uid}").append "ユーザ#{user.uid} "
+    unless user.continuationCorrect is 0
+      for i in [1..user.continuationCorrect]
+        $("#uid_#{user.uid}").append "<span class=\"glyphicon glyphicon-star\" aria-hidden=\"true\"></span>"
+    unless user.continuationCorrect is 5
+      for i in [1..(5 - user.continuationCorrect)]
+        $("#uid_#{user.uid}").append "<span class=\"glyphicon glyphicon-star-empty\" aria-hidden=\"true\"></span>"
 
   finishEffect = (uid) ->
     $('#answer').attr 'disabled', 'disabled'

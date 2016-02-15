@@ -8,6 +8,9 @@ object UserWorker {
   def props(field: ActorRef) = Props(new UserWorker(field))
   val name = "UserWorker"
 
+  case class Result(uid: UID, isCorrect: Boolean)
+  case class UpdateUser(uid: UID, continuationCorrect: Int)
+
   sealed trait Event
   case class Joined(uid: UID, socketActor: ActorRef) extends Event
 
@@ -21,6 +24,7 @@ class UserWorker(field: ActorRef) extends PersistentActor {
   mediator ! Subscribe("update", self)
 
   var socketActor: ActorRef = null
+  var continuationCorrect = 0
 
   override def preStart() = println("----------UserWorker_Start-------------")
   override def postStop() = println("----------UserWorker_Stop--------------")
@@ -38,7 +42,6 @@ class UserWorker(field: ActorRef) extends PersistentActor {
     case FieldActor.Join(uid) =>
       println("------userWorker_join------")
       socketActor = sender
-      println(socketActor)
       context watch socketActor
       mediator ! Publish("join", FieldActor.Join(uid))
       persist(Joined(uid, socketActor))(updateState)
@@ -46,6 +49,15 @@ class UserWorker(field: ActorRef) extends PersistentActor {
     case p:FieldActor.Participation =>
       println("------userWorker_participation------")
       socketActor ! p
+      println("----------------------")
+    case Result(uid, isCorrect) =>
+      println("------userWorker_result------")
+      continuationCorrect = if(isCorrect) continuationCorrect + 1 else 0
+      mediator forward Publish("update", UpdateUser(uid, continuationCorrect))
+      println("----------------------")
+    case u:UpdateUser =>
+      println("------userWorker_updateUser------")
+      socketActor ! u
       println("----------------------")
     case Terminated(user) =>
       println("------userWorker_terminated------")
