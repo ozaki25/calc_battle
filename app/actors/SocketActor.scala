@@ -83,7 +83,6 @@ class UserHandler(userSize: Int, replyTo: ActorRef) extends Actor {
       context.setReceiveTimeout(1 second)
       users += user
       if(users.size == userSize) {
-        println(users)
         replyTo ! UpdateUsers(users)
         context.stop(self)
       }

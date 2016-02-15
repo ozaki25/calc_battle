@@ -30,7 +30,7 @@ class FieldActor extends Actor {
       users += (sender -> uid)
       println(users)
       context watch sender
-      sender ! Participation(users.values.toSet)
+      context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users.values.toSet)
       println("----------------------")
     case Terminated(user) =>
       println("------fieldActor_terminated------")
