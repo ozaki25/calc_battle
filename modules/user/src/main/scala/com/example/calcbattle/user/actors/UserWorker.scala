@@ -11,6 +11,7 @@ object UserWorker {
   case class Result(uid: UID, isCorrect: Boolean)
   case class UpdateUser(uid: UID, continuationCorrect: Int)
   case class Get(uid: UID)
+  case object DuplicateRequest
 
   sealed trait Event
   // [TODO]
@@ -22,6 +23,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   import com.example.calcbattle.user.actors.UserWorker._
 
   var socketActor: ActorRef = null
+  var currentUid: UID = UID("0")
   var continuationCorrect = 0
   val mediator = DistributedPubSub(context.system).mediator
 
@@ -36,9 +38,14 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
 
   override def receiveCommand = {
     case FieldActor.Join(uid) =>
-      socketActor = sender
-      context watch socketActor
-      mediator ! Publish("join", FieldActor.Join(uid))
+      if(currentUid == uid) {
+        sender ! DuplicateRequest
+      } else {
+        socketActor = sender
+        currentUid = uid
+        context watch socketActor
+        mediator ! Publish("join", FieldActor.Join(uid))
+      }
     case Result(uid, isCorrect) =>
       continuationCorrect = if(isCorrect) continuationCorrect + 1 else 0
       mediator forward Publish("update", UpdateUser(uid, continuationCorrect))

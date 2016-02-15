@@ -57,6 +57,8 @@ class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out:
       out ! js
     case UsersHandler.UsersGetTimeout =>
       log.warning("ユーザ一覧を取得できませんでした。")
+    case UserWorker.DuplicateRequest =>
+      log.warning("二重アクセスはできません。")
   }
 }
 
