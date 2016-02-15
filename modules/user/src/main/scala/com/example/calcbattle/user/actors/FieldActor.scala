@@ -37,6 +37,7 @@ class FieldActor extends Actor {
       println(users)
       users -= user
       println(users)
+      context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users.values.toSet)
       println("----------------------")
     case SubscribeAck(Subscribe("join", None, `self`)) =>
       println("----FieldActor subscribing Join----")
