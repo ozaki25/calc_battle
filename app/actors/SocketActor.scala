@@ -50,7 +50,7 @@ class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out:
         userRouter.tell(UserWorker.Get(uid), handler)
       }
     case u:UserWorker.UpdateUser =>
-      val js = Json.obj("type" -> "updateUser", "user" -> u)
+      val js = Json.obj("type" -> "updateUser", "user" -> u, "finish" -> u.isFinish)
       out ! js
     case UsersHandler.UpdateUsers(users) =>
       val js = Json.obj("type" -> "updateUsers", "users" -> users)

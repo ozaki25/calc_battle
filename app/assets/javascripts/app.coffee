@@ -19,7 +19,7 @@ $ ->
         for user in message.users
           $('#users').append "<li id=\"uid_#{user.uid}\" class=\"list-group-item\"></li>"
           updateStar(user)
-          finishEffect(user.uid) if message.finish
+          finishEffect(user.uid)
       else
         console.log "[Error] unmatch message: #{message}"
 

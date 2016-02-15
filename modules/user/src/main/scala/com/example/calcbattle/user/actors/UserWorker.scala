@@ -9,7 +9,9 @@ object UserWorker {
   val name = "UserWorker"
 
   case class Result(uid: UID, isCorrect: Boolean)
-  case class UpdateUser(uid: UID, continuationCorrect: Int)
+  case class UpdateUser(uid: UID, continuationCorrect: Int) {
+    val isFinish = continuationCorrect >= 5
+  }
   case class Get(uid: UID)
   case object DuplicateRequest
 
