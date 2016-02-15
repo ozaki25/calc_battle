@@ -23,7 +23,6 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   import com.example.calcbattle.user.actors.UserWorker._
 
   var socketActor: ActorRef = null
-  var currentUid: UID = UID("0")
   var continuationCorrect = 0
   val mediator = DistributedPubSub(context.system).mediator
 
@@ -36,16 +35,16 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
     // [TODO]
   }
 
-  override def receiveCommand = {
+  override def receiveCommand = initial
+
+  def initial: Receive = {
     case FieldActor.Join(uid) =>
-      if(currentUid == uid) {
-        sender ! DuplicateRequest
-      } else {
-        socketActor = sender
-        currentUid = uid
-        context watch socketActor
-        mediator ! Publish("join", FieldActor.Join(uid))
-      }
+      socketActor = sender
+      context watch socketActor
+      context.become(joined)
+      mediator ! Publish("join", FieldActor.Join(uid))
+  }
+  def joined: Receive = {
     case Result(uid, isCorrect) =>
       continuationCorrect = if(isCorrect) continuationCorrect + 1 else 0
       mediator forward Publish("update", UpdateUser(uid, continuationCorrect))
@@ -56,6 +55,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
     case Get(uid) =>
       sender ! UpdateUser(uid, continuationCorrect)
     case Terminated(user) =>
+      context.become(initial)
       context.stop(self)
     case SubscribeAck(Subscribe("update", None, self)) =>
       log.info("UserWorker subscribing 'update'")
