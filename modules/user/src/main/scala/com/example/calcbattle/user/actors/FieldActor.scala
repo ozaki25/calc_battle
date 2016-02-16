@@ -1,38 +1,19 @@
 package com.example.calcbattle.user.actors
 
 import akka.actor._
-import akka.cluster.sharding.{ShardRegion, ClusterSharding, ClusterShardingSettings}
 import akka.persistence.PersistentActor
 
 object FieldActor {
   def props = Props(new FieldActor)
   val name = "FieldActor"
-  val nrOfShards = 50
-
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg @ Join(uid) => (uid.id, msg)
-  }
-
-  val extractShardId: ShardRegion.ExtractShardId = {
-    case msg @ Join(uid) => (uid.hashCode % nrOfShards).toString
-  }
-
-  def startupSharding(system: ActorSystem) = {
-    ClusterSharding(system).start(
-      typeName = FieldActor.name,
-      entityProps = FieldActor.props,
-      settings = ClusterShardingSettings(system),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId
-    )
-  }
 
   case class UID(val id: String) extends AnyVal
   case class Join(uid: UID)
   case class Participation(uids: Set[UID])
 
   sealed trait Event
-  // [TODO]
+  case class Joined(userWorker: ActorRef, uid: UID) extends Event
+  case class Left(userWorker: ActorRef) extends Event
 }
 
 class FieldActor extends PersistentActor with ActorLogging {
@@ -43,8 +24,7 @@ class FieldActor extends PersistentActor with ActorLogging {
   override def persistenceId: String = name
 
   override def receiveRecover: Receive = {
-    case event: Event =>
-    // [TODO]
+    case event: Event => updateState(event)
   }
 
   override def preStart() = {
@@ -56,13 +36,25 @@ class FieldActor extends PersistentActor with ActorLogging {
 
   def receiveCommand = {
     case Join(uid) =>
-      users += (sender -> uid)
-      context watch sender
-      context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users.values.toSet)
+      persist(Joined(sender, uid))(updateState)
     case Terminated(user) =>
-      users -= user
-      context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users.values.toSet)
+      persist(Left(user))(updateState)
     case SubscribeAck(Subscribe("join", None, self)) =>
       log.info("FieldActor subscribing 'join'")
+  }
+
+  def updateState(event: Event): Unit = {
+    log.info(event.toString)
+    event match {
+      case Joined(userWorker, uid) =>
+        users += (userWorker -> uid)
+        context watch userWorker
+        context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users.values.toSet)
+      case Left(userWorker) =>
+        users -= userWorker
+        context unwatch userWorker
+        context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users.values.toSet)
+    }
+    log.info("user count {}", users.size.toString)
   }
 }
