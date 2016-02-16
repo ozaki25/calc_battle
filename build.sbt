@@ -23,7 +23,7 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
     // Play provides two styles of routers, one expects its actions to be injected, the
     // other, legacy style, accesses its actions statically.
     routesGenerator := InjectedRoutesGenerator
-  ).dependsOn(examiner)
+  ).dependsOn(examiner, user)
 
 lazy val examiner = (project in file("modules/examiner"))
   .settings(commonSettings: _*)
@@ -33,7 +33,23 @@ lazy val examiner = (project in file("modules/examiner"))
       "com.typesafe.akka" %% "akka-cluster" % "2.4.1"
     ),
     fullRunInputTask(run, Compile, "com.example.calcbattle.examiner.Main", "127.0.0.1", "0"),
-    fullRunTask(runSeed, Compile, "com.example.calcbattle.examiner.Main", "127.0.0.1", "2552")
+    fullRunTask(runSeed, Compile, "com.example.calcbattle.examiner.Main", "127.0.0.1", "2551")
+  )
+
+lazy val user = (project in file("modules/user"))
+  .settings(commonSettings: _*)
+  .settings(
+    name := s"""$namePrefix-user""",
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-cluster" % "2.4.1",
+      "com.typesafe.akka" %% "akka-cluster-sharding" % "2.4.1",
+      "com.typesafe.akka" %% "akka-persistence" % "2.4.1",
+      "com.typesafe.akka" %% "akka-cluster-tools" % "2.4.1",
+      "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.7"
+
+    ),
+    fullRunInputTask(run, Compile, "com.example.calcbattle.user.Main", "127.0.0.1", "0"),
+    fullRunTask(runSeed, Compile, "com.example.calcbattle.user.Main", "127.0.0.1", "2552")
   )
 
 lazy val runSeed = TaskKey[Unit]("run-seed", "run one node as seed.")

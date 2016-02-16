@@ -14,6 +14,6 @@ class ExaminerActor extends Actor {
 
   def receive = {
     case Create =>
-      sender() ! Question.create()
+      sender ! Question.create()
   }
 }

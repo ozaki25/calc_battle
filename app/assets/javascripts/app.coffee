@@ -2,6 +2,7 @@ $ ->
   ws = new WebSocket $('body').data 'ws-url'
   ws.onmessage = (event) ->
     message = JSON.parse event.data
+    console.log message
     switch message.type
       when 'question'
         first = message.question.first
@@ -9,26 +10,26 @@ $ ->
         $('#question').html "#{first} + #{second}"
         $('#answer').attr 'answer', first + second
       when 'updateUser'
-        for uid, continuationCorrect of message.user
-          $("#uid_#{uid}").empty()
-          updateStar(uid, continuationCorrect)
-          finishEffect(uid) if message.finish
+        user = message.user
+        $("#uid_#{user.uid}").empty()
+        updateStar(user)
+        finishEffect(user.uid) if message.finish
       when 'updateUsers'
         $('#users').empty()
-        for uid, continuationCorrect of message.users
-          $('#users').append "<li id=\"uid_#{uid}\" class=\"list-group-item\"></li>"
-          updateStar(uid, continuationCorrect)
+        for user in message.users
+          $('#users').append "<li id=\"uid_#{user.uid}\" class=\"list-group-item\"></li>"
+          updateStar(user)
       else
         console.log "[Error] unmatch message: #{message}"
 
-  updateStar = (uid, continuationCorrect) ->
-    $("#uid_#{uid}").append "ユーザ#{uid} "
-    unless continuationCorrect is 0
-      for i in [1..continuationCorrect]
-        $("#uid_#{uid}").append "<span class=\"glyphicon glyphicon-star\" aria-hidden=\"true\"></span>"
-    unless continuationCorrect is 5
-      for i in [1..(5 - continuationCorrect)]
-        $("#uid_#{uid}").append "<span class=\"glyphicon glyphicon-star-empty\" aria-hidden=\"true\"></span>"
+  updateStar = (user) ->
+    $("#uid_#{user.uid}").append "ユーザ#{user.uid} "
+    unless user.continuationCorrect is 0
+      for i in [1..user.continuationCorrect]
+        $("#uid_#{user.uid}").append "<span class=\"glyphicon glyphicon-star\" aria-hidden=\"true\"></span>"
+    unless user.continuationCorrect is 5
+      for i in [1..(5 - user.continuationCorrect)]
+        $("#uid_#{user.uid}").append "<span class=\"glyphicon glyphicon-star-empty\" aria-hidden=\"true\"></span>"
 
   finishEffect = (uid) ->
     $('#answer').attr 'disabled', 'disabled'
@@ -44,4 +45,5 @@ $ ->
       $(this).val ''
 
   $('#start').click ->
-      ws.send JSON.stringify { start: true }
+    $('#answer').removeAttr 'disabled'
+    ws.send JSON.stringify { start: true }
