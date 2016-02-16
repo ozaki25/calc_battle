@@ -89,6 +89,5 @@ class UsersHandler(userSize: Int, replyTo: ActorRef) extends Actor {
     case e: ReceiveTimeout =>
       replyTo ! UsersGetTimeout
       context.stop(self)
-
   }
 }

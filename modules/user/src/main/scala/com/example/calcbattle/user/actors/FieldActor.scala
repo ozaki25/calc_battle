@@ -12,8 +12,8 @@ object FieldActor {
   case class Participation(uids: Set[UID])
 
   sealed trait Event
-  case class Joined(userWorker: ActorRef, uid: UID) extends Event
-  case class Left(userWorker: ActorRef) extends Event
+  case class Joined(uid: UID) extends Event
+  case class Left(uid: UID) extends Event
 }
 
 class FieldActor extends PersistentActor with ActorLogging {
@@ -24,7 +24,10 @@ class FieldActor extends PersistentActor with ActorLogging {
   override def persistenceId: String = name
 
   override def receiveRecover: Receive = {
-    case event: Event => updateState(event)
+    case event: Event => {
+      log.info("receiveRecover")
+      updateState(event)
+    }
   }
 
   override def preStart() = {
@@ -32,13 +35,15 @@ class FieldActor extends PersistentActor with ActorLogging {
     mediator ! Subscribe("join", self)
   }
 
-  var users = Map[ActorRef, UID]()
+  var users = Set[UID]()
 
   def receiveCommand = {
     case Join(uid) =>
-      persist(Joined(sender, uid))(updateState)
-    case Terminated(user) =>
-      persist(Left(user))(updateState)
+      log.info("Join(uid)")
+      persist(Joined(uid))(updateState)
+    case UserWorker.Stoped(uid) =>
+      log.info("UserWorker.Stoped(uid)")
+      persist(Left(uid))(updateState)
     case SubscribeAck(Subscribe("join", None, self)) =>
       log.info("FieldActor subscribing 'join'")
   }
@@ -46,14 +51,12 @@ class FieldActor extends PersistentActor with ActorLogging {
   def updateState(event: Event): Unit = {
     log.info(event.toString)
     event match {
-      case Joined(userWorker, uid) =>
-        users += (userWorker -> uid)
-        context watch userWorker
-        context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users.values.toSet)
-      case Left(userWorker) =>
-        users -= userWorker
-        context unwatch userWorker
-        context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users.values.toSet)
+      case Joined(uid) =>
+        users += uid
+        context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users)
+      case Left(uid) =>
+        users -= uid
+        context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users)
     }
     log.info("user count {}", users.size.toString)
   }

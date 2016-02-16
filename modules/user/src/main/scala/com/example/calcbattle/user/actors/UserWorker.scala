@@ -1,6 +1,6 @@
 package com.example.calcbattle.user.actors
 
-import akka.actor.{ActorLogging, ActorRef, Props, Terminated}
+import akka.actor._
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.PersistentActor
 import com.example.calcbattle.user.actors.FieldActor.UID
@@ -14,6 +14,7 @@ object UserWorker {
     val isFinish = continuationCorrect >= 5
   }
   case class Get(uid: UID)
+  case class Stoped(uid: UID)
   case object DuplicateRequest
   case object Stop
 
@@ -34,7 +35,10 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   override def persistenceId: String = self.path.parent.name + "-" + self.path.name
 
   override def receiveRecover: Receive = {
-    case event: Event => updateState(event)
+    case event: Event => {
+      log.info("receiveRecover")
+      updateState(event)
+    }
   }
 
   override def receiveCommand = initial
@@ -45,21 +49,27 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   }
   def joined(socketActor: ActorRef, uid: UID): Receive = {
     case FieldActor.Join(uid) =>
+      log.info("FieldActor.Join(uid)")
       context unwatch socketActor
       persist(Joined(sender, uid))(updateState)
     case Result(uid, isCorrect) =>
+      log.info("Result(uid, isCorrect)")
       persist(Answered(uid, isCorrect))(updateState)
     case p:FieldActor.Participation =>
-      log.info("participation {}", p)
+      log.info("p:FieldActor.Participation")
       socketActor ! p
     case u:UpdateUser =>
+      log.info("u:UpdateUser")
       socketActor ! u
     case Get(uid) =>
-      log.info("get")
+      log.info("Get(uid)")
       sender ! UpdateUser(uid, continuationCorrect)
     case Terminated(user) =>
+      log.info("Terminated(user)")
       context.parent ! Passivate(stopMessage = Stop)
     case Stop =>
+      log.info("Stop")
+      mediator ! Publish("join", Stoped(uid))
       context.stop(self)
     case SubscribeAck(Subscribe("update", None, self)) =>
       log.info("UserWorker subscribing 'update'")
@@ -74,7 +84,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
         context.become(joined(socketActor, uid))
         mediator ! Publish("join", FieldActor.Join(uid))
       case Answered(uid, isCorrect) =>
-        continuationCorrect = if (isCorrect) continuationCorrect + 1 else 0
+        continuationCorrect = if(isCorrect) continuationCorrect + 1 else 0
         mediator ! Publish("update", UpdateUser(uid, continuationCorrect))
     }
   }
