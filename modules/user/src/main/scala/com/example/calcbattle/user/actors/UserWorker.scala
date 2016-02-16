@@ -16,7 +16,8 @@ object UserWorker {
   case object DuplicateRequest
 
   sealed trait Event
-  // [TODO]
+  case class Joined(socketActor: ActorRef, uid: UID) extends Event
+  case class Answered(uid: UID, isCorrect: Boolean) extends Event
 
 }
 class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
@@ -24,7 +25,6 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
   import com.example.calcbattle.user.actors.UserWorker._
 
-  var socketActor: ActorRef = null
   var continuationCorrect = 0
   val mediator = DistributedPubSub(context.system).mediator
 
@@ -33,23 +33,18 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   override def persistenceId: String = self.path.parent.name + "-" + self.path.name
 
   override def receiveRecover: Receive = {
-    case event: Event =>
-    // [TODO]
+    case event: Event => updateState(event)
   }
 
   override def receiveCommand = initial
 
   def initial: Receive = {
     case FieldActor.Join(uid) =>
-      socketActor = sender
-      context watch socketActor
-      context.become(joined)
-      mediator ! Publish("join", FieldActor.Join(uid))
+      persist(Joined(sender, uid))(updateState)
   }
-  def joined: Receive = {
+  def joined(socketActor: ActorRef, uid: UID): Receive = {
     case Result(uid, isCorrect) =>
-      continuationCorrect = if(isCorrect) continuationCorrect + 1 else 0
-      mediator forward Publish("update", UpdateUser(uid, continuationCorrect))
+      persist(Answered(uid, isCorrect))(updateState)
     case p:FieldActor.Participation =>
       socketActor ! p
     case u:UpdateUser =>
@@ -64,7 +59,12 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   }
 
   def updateState(event: Event): Unit = event match {
-    case _ =>
-    // [TODO]
+    case Joined(socketActor, uid) =>
+      context watch sender
+      context.become(joined(sender, uid))
+      mediator ! Publish("join", FieldActor.Join(uid))
+    case Answered(uid, isCorrect) =>
+      continuationCorrect = if(isCorrect) continuationCorrect + 1 else 0
+      mediator forward Publish("update", UpdateUser(uid, continuationCorrect))
   }
 }
