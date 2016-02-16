@@ -75,7 +75,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
         mediator ! Publish("join", FieldActor.Join(uid))
       case Answered(uid, isCorrect) =>
         continuationCorrect = if (isCorrect) continuationCorrect + 1 else 0
-        mediator forward Publish("update", UpdateUser(uid, continuationCorrect))
+        mediator ! Publish("update", UpdateUser(uid, continuationCorrect))
     }
   }
 }
