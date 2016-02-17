@@ -22,6 +22,7 @@ object UserWorker {
   case class Joined(socketActor: ActorRef, uid: UID) extends Event
   case class Answered(uid: UID, isCorrect: Boolean) extends Event
 }
+
 class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   import akka.cluster.pubsub.DistributedPubSub
   import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
@@ -49,23 +50,23 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   }
   def joined(socketActor: ActorRef, uid: UID): Receive = {
     case FieldActor.Join(uid) =>
-      log.info("FieldActor.Join(uid)")
+      log.info("FieldActor.Join(uid) {}", uid)
       context unwatch socketActor
       persist(Joined(sender, uid))(updateState)
     case Result(uid, isCorrect) =>
-      log.info("Result(uid, isCorrect)")
+      log.info("Result(uid, isCorrect) {} {}", uid, isCorrect)
       persist(Answered(uid, isCorrect))(updateState)
     case p:FieldActor.Participation =>
-      log.info("p:FieldActor.Participation")
+      log.info("p:FieldActor.Participation {}", p)
       socketActor ! p
     case u:UpdateUser =>
-      log.info("u:UpdateUser")
+      log.info("u:UpdateUser {}", u)
       socketActor ! u
     case Get(uid) =>
-      log.info("Get(uid)")
+      log.info("Get(uid) {}", uid)
       sender ! UpdateUser(uid, continuationCorrect)
     case Terminated(user) =>
-      log.info("Terminated(user)")
+      log.info("Terminated(user) {}", user)
       context.parent ! Passivate(stopMessage = Stop)
     case Stop =>
       log.info("Stop")

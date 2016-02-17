@@ -39,10 +39,10 @@ class FieldActor extends PersistentActor with ActorLogging {
 
   def receiveCommand = {
     case Join(uid) =>
-      log.info("Join(uid)")
+      log.info("Join(uid) {}", uid)
       persist(Joined(uid))(updateState)
     case UserWorker.Stopped(uid) =>
-      log.info("UserWorker.Stopped(uid)")
+      log.info("UserWorker.Stopped(uid) {}", uid)
       persist(Left(uid))(updateState)
     case SubscribeAck(Subscribe("join", None, self)) =>
       log.info("FieldActor subscribing 'join'")
