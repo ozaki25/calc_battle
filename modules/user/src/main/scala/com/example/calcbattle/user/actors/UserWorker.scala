@@ -9,12 +9,13 @@ object UserWorker {
   def props(field: ActorRef) = Props(new UserWorker(field))
   val name = "UserWorker"
 
+  case class UpdateName(uid: UID, name: String)
   case class UpdateCorrectCount(uid: UID, isCorrect: Boolean)
   case class Create(uid: UID)
   case class Get(uid: UID)
   case object Stop
 
-  case class Updated(uid: UID, correctCount: Int) {
+  case class Updated(uid: UID, correctCount: Int, name: String) {
     val isFinish = correctCount >= 5
   }
   case class Stopped(uid: UID)
@@ -22,6 +23,7 @@ object UserWorker {
 
   sealed trait Event
   case class Joined(socketActor: ActorRef, uid: UID) extends Event
+  case class Registered(uid: UID, name: String) extends Event
   case class Answered(uid: UID, isCorrect: Boolean) extends Event
 }
 
@@ -30,6 +32,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
   import com.example.calcbattle.user.actors.UserWorker._
 
+  var nicName = ""
   var correctCount = 0
   val mediator = DistributedPubSub(context.system).mediator
 
@@ -55,8 +58,11 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
       log.info("FieldActor.Join(uid) {}", uid)
       context unwatch socketActor
       persist(Joined(sender, uid))(updateState)
+    case UpdateName(uid, name) =>
+      log.info("UpdateName(uid, isCorrect) {} {}", uid, name)
+      persist(Registered(uid, name))(updateState)
     case UpdateCorrectCount(uid, isCorrect) =>
-      log.info("Result(uid, isCorrect) {} {}", uid, isCorrect)
+      log.info("UpdateCorrectCount(uid, isCorrect) {} {}", uid, isCorrect)
       persist(Answered(uid, isCorrect))(updateState)
     case u:FieldActor.UpdatedUserList =>
       log.info("p:FieldActor.Participation {}", u)
@@ -66,7 +72,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
       socketActor ! u
     case Get(uid) =>
       log.info("Get(uid) {}", uid)
-      sender ! Updated(uid, correctCount)
+      sender ! Updated(uid, correctCount, nicName)
     case Terminated(user) =>
       log.info("Terminated(user) {}", user)
       context.parent ! Passivate(stopMessage = Stop)
@@ -82,13 +88,17 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
     log.info(event.toString)
     event match {
       case Joined(socketActor, uid) =>
+        nicName = uid.id.toString
         correctCount = 0
         context watch socketActor
         context.become(joined(socketActor, uid))
         mediator ! Publish("join", FieldActor.Join(uid))
+      case Registered(uid, name) =>
+        nicName = name
+        mediator ! Publish("update", Updated(uid, correctCount, nicName))
       case Answered(uid, isCorrect) =>
         correctCount = if(isCorrect) correctCount + 1 else 0
-        mediator ! Publish("update", Updated(uid, correctCount))
+        mediator ! Publish("update", Updated(uid, correctCount, nicName))
     }
   }
 }

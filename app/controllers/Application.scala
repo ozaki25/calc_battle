@@ -17,7 +17,7 @@ class Application extends Controller {
 
   def index = Action { implicit request =>
     val uid: String = request.session.get(UID).getOrElse {
-      UUID.randomUUID().toString
+      UUID.randomUUID().toString.replace("_", "")
     }
     Ok(views.html.index(uid)).withSession {
       request.session + (UID -> uid)

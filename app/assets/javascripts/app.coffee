@@ -23,7 +23,7 @@ $ ->
         console.log "[Error] unmatch message: #{message}"
 
   updateStar = (user) ->
-    $("#uid_#{user.uid}").append "ユーザ#{user.uid} "
+    $("#uid_#{user.uid}").append user.nicName
     unless user.correctCount is 0
       for i in [1..user.correctCount]
         $("#uid_#{user.uid}").append "<span class=\"glyphicon glyphicon-star\" aria-hidden=\"true\"></span>"
@@ -45,5 +45,8 @@ $ ->
       $(this).val ''
 
   $('#start').click ->
-    $('#answer').removeAttr 'disabled'
-    ws.send JSON.stringify { start: true }
+    name = $('#name').val()
+    console.log "your name is #{name}"
+    $('#nicname').text name
+    $('#answer').removeClass 'hide'
+    ws.send JSON.stringify { name: name }

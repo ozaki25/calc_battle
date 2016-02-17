@@ -19,7 +19,7 @@ object SocketActor {
 
   implicit val userWrites = new Writes[UserWorker.Updated] {
     def writes(user: UserWorker.Updated): JsValue = {
-      Json.obj("uid" -> user.uid.id, "correctCount" -> user.correctCount)
+      Json.obj("uid" -> user.uid.id, "correctCount" -> user.correctCount, "nicName" -> user.name)
     }
   }
 
@@ -37,9 +37,8 @@ class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out:
 
   def receive = {
     case js: JsValue =>
-      (js \ "result").validate[Boolean] foreach { isCorrect =>
-        userRouter ! UserWorker.UpdateCorrectCount(uid, isCorrect)
-      }
+      (js \ "name").validate[String] foreach { userRouter ! UserWorker.UpdateName(uid, _) }
+      (js \ "result").validate[Boolean] foreach { userRouter ! UserWorker.UpdateCorrectCount(uid, _) }
       examinerRouter ! ExaminerActor.Create
     case q: Question =>
       val question = Json.obj("type" -> "question", "question" -> q)
