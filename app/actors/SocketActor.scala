@@ -19,7 +19,7 @@ object SocketActor {
 
   implicit val userWrites = new Writes[UserWorker.Updated] {
     def writes(user: UserWorker.Updated): JsValue = {
-      Json.obj("uid" -> user.uid.id, "correctCount" -> user.correctCount)
+      Json.obj("uid" -> user.uid.id, "correctCount" -> user.correctCount, "nicName" -> user.name)
     }
   }
 
@@ -28,6 +28,8 @@ object SocketActor {
       Json.obj("first" -> question.first, "second" -> question.second)
     }
   }
+
+  implicit val answerReads = Json.reads[ExaminerActor.Answer]
 }
 
 class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out: ActorRef) extends Actor with ActorLogging {
@@ -37,13 +39,14 @@ class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out:
 
   def receive = {
     case js: JsValue =>
-      (js \ "result").validate[Boolean] foreach { isCorrect =>
-        userRouter ! UserWorker.UpdateCorrectCount(uid, isCorrect)
-      }
+      (js \ "name").validate[String] foreach { userRouter ! UserWorker.UpdateName(uid, _) }
+      (js \ "answer").validate[ExaminerActor.Answer] foreach { examinerRouter ! ExaminerActor.Check(_) }
       examinerRouter ! ExaminerActor.Create
-    case q: Question =>
+    case ExaminerActor.Exam(q) =>
       val question = Json.obj("type" -> "question", "question" -> q)
       out ! question
+    case ExaminerActor.Result(isCorrect) =>
+      userRouter ! UserWorker.UpdateCorrectCount(uid, isCorrect)
     case FieldActor.UpdatedUserList(uids) =>
       val handler = context.actorOf(UsersHandler.props(uids.size, replyTo = self))
       uids.foreach { uid =>

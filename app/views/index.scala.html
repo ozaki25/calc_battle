@@ -1,5 +1,5 @@
 @import play.api.mvc.RequestHeader
-@(uid: String)(implicit request: RequestHeader)
+@(name: String)(implicit request: RequestHeader)
 
 <!DOCTYPE html>
 
@@ -27,16 +27,21 @@
           <div class="col-md-4">
             <div class="panel panel-default">
               <div class="panel-heading">
-                <h5 class="panel-title">ユーザ一覧<small> あなたは <strong>ユーザ@uid</strong> です</small></h5>
+                <h5 class="panel-title">ユーザ一覧<small> あなたは <strong id="nicname">@name</strong> です</small></h5>
               </div>
               <ul id="users" class="list-group"></ul>
             </div>
           </div>
           <div class="col-md-6">
             <h1 id="question">
-              <a href="#" id="start" class="btn btn-link btn-lg">クリックすると問題が表示されます</a>
+              <form class="form-inline">
+                <div class="form-group">
+                  <input id="name" type="text" class="form-control input-lg" placeholder="名前を入力して下さい。" autofocus />
+                  <a href="#" id="start" class="btn btn-default btn-lg">問題スタート！</a>
+                </div>
+              </form>
             </h1>
-            <input id="answer" type="text" class="form-control input-lg" autofocus disabled />
+            <input id="answer" type="text" class="form-control input-lg hide" autofocus />
           </div>
         </div>
       </div>
