@@ -32,7 +32,7 @@ object SocketActor {
 
 class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out: ActorRef) extends Actor with ActorLogging {
   override def preStart() = {
-    userRouter ! FieldActor.Join(uid)
+    userRouter ! UserWorker.Create(uid)
   }
 
   def receive = {

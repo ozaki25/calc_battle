@@ -13,6 +13,7 @@ object UserWorker {
   case class UpdateUser(uid: UID, continuationCorrect: Int) {
     val isFinish = continuationCorrect >= 5
   }
+  case class Create(uid: UID)
   case class Get(uid: UID)
   case class Stopped(uid: UID)
   case object DuplicateRequest
@@ -45,11 +46,11 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   override def receiveCommand = initial
 
   def initial: Receive = {
-    case FieldActor.Join(uid) =>
+    case Create(uid) =>
       persist(Joined(sender, uid))(updateState)
   }
   def joined(socketActor: ActorRef, uid: UID): Receive = {
-    case FieldActor.Join(uid) =>
+    case Create(uid) =>
       log.info("FieldActor.Join(uid) {}", uid)
       context unwatch socketActor
       persist(Joined(sender, uid))(updateState)
