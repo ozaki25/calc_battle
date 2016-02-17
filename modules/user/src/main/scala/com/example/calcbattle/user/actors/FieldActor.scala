@@ -8,8 +8,9 @@ object FieldActor {
   val name = "FieldActor"
 
   case class UID(val id: String) extends AnyVal
+
   case class Join(uid: UID)
-  case class Participation(uids: Set[UID])
+  case class UpdatedUserList(uids: Set[UID])
 
   sealed trait Event
   case class Joined(uid: UID) extends Event
@@ -53,10 +54,10 @@ class FieldActor extends PersistentActor with ActorLogging {
     event match {
       case Joined(uid) =>
         users += uid
-        context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users)
+        context.actorSelection("/system/sharding/UserWorker/*/*") ! UpdatedUserList(users)
       case Left(uid) =>
         users -= uid
-        context.actorSelection("/system/sharding/UserWorker/*/*") ! Participation(users)
+        context.actorSelection("/system/sharding/UserWorker/*/*") ! UpdatedUserList(users)
     }
     log.info("user count {}", users.size.toString)
   }

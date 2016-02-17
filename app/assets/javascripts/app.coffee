@@ -24,11 +24,11 @@ $ ->
 
   updateStar = (user) ->
     $("#uid_#{user.uid}").append "ユーザ#{user.uid} "
-    unless user.continuationCorrect is 0
-      for i in [1..user.continuationCorrect]
+    unless user.correctCount is 0
+      for i in [1..user.correctCount]
         $("#uid_#{user.uid}").append "<span class=\"glyphicon glyphicon-star\" aria-hidden=\"true\"></span>"
-    unless user.continuationCorrect is 5
-      for i in [1..(5 - user.continuationCorrect)]
+    unless user.correctCount is 5
+      for i in [1..(5 - user.correctCount)]
         $("#uid_#{user.uid}").append "<span class=\"glyphicon glyphicon-star-empty\" aria-hidden=\"true\"></span>"
 
   finishEffect = (uid) ->
