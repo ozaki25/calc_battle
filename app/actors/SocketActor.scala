@@ -17,9 +17,9 @@ object SocketActor {
 
   def props(uid: UID)(out: ActorRef) = Props(new SocketActor(uid, examinerRouter, userRouter, out))
 
-  implicit val userWrites = new Writes[UserWorker.UpdateUser] {
-    def writes(user: UserWorker.UpdateUser): JsValue = {
-      Json.obj("uid" -> user.uid.id, "continuationCorrect" -> user.continuationCorrect)
+  implicit val userWrites = new Writes[UserWorker.Updated] {
+    def writes(user: UserWorker.Updated): JsValue = {
+      Json.obj("uid" -> user.uid.id, "correctCount" -> user.correctCount)
     }
   }
 
@@ -32,24 +32,24 @@ object SocketActor {
 
 class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out: ActorRef) extends Actor with ActorLogging {
   override def preStart() = {
-    userRouter ! FieldActor.Join(uid)
+    userRouter ! UserWorker.Create(uid)
   }
 
   def receive = {
     case js: JsValue =>
       (js \ "result").validate[Boolean] foreach { isCorrect =>
-        userRouter ! UserWorker.Result(uid, isCorrect)
+        userRouter ! UserWorker.UpdateCorrectCount(uid, isCorrect)
       }
       examinerRouter ! ExaminerActor.Create
     case q: Question =>
       val question = Json.obj("type" -> "question", "question" -> q)
       out ! question
-    case FieldActor.Participation(uids) =>
+    case FieldActor.UpdatedUserList(uids) =>
       val handler = context.actorOf(UsersHandler.props(uids.size, replyTo = self))
       uids.foreach { uid =>
         userRouter.tell(UserWorker.Get(uid), handler)
       }
-    case u:UserWorker.UpdateUser =>
+    case u:UserWorker.Updated =>
       val js = Json.obj("type" -> "updateUser", "user" -> u, "finish" -> u.isFinish)
       out ! js
     case UsersHandler.UpdateUsers(users) =>
@@ -65,7 +65,7 @@ class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out:
 
 object UsersHandler {
   def props(userSize: Int, replyTo: ActorRef) = Props(new UsersHandler(userSize, replyTo))
-  case class UpdateUsers(users: Set[UserWorker.UpdateUser])
+  case class UpdateUsers(users: Set[UserWorker.Updated])
   case object UsersGetTimeout
 }
 
@@ -76,10 +76,10 @@ class UsersHandler(userSize: Int, replyTo: ActorRef) extends Actor {
 
   context.setReceiveTimeout(5 seconds)
 
-  var users: Set[UserWorker.UpdateUser] = Set()
+  var users: Set[UserWorker.Updated] = Set()
 
   def receive = {
-    case user: UserWorker.UpdateUser =>
+    case user: UserWorker.Updated =>
       context.setReceiveTimeout(1 second)
       users += user
       if(users.size == userSize) {
@@ -89,6 +89,5 @@ class UsersHandler(userSize: Int, replyTo: ActorRef) extends Actor {
     case e: ReceiveTimeout =>
       replyTo ! UsersGetTimeout
       context.stop(self)
-
   }
 }
