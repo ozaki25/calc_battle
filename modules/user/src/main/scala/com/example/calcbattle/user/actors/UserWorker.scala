@@ -14,7 +14,7 @@ object UserWorker {
     val isFinish = continuationCorrect >= 5
   }
   case class Get(uid: UID)
-  case class Stoped(uid: UID)
+  case class Stopped(uid: UID)
   case object DuplicateRequest
   case object Stop
 
@@ -69,7 +69,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
       context.parent ! Passivate(stopMessage = Stop)
     case Stop =>
       log.info("Stop")
-      mediator ! Publish("join", Stoped(uid))
+      mediator ! Publish("join", Stopped(uid))
       context.stop(self)
     case SubscribeAck(Subscribe("update", None, self)) =>
       log.info("UserWorker subscribing 'update'")

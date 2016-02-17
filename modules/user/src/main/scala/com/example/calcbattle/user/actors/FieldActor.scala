@@ -41,7 +41,7 @@ class FieldActor extends PersistentActor with ActorLogging {
     case Join(uid) =>
       log.info("Join(uid)")
       persist(Joined(uid))(updateState)
-    case UserWorker.Stoped(uid) =>
+    case UserWorker.Stopped(uid) =>
       log.info("UserWorker.Stoped(uid)")
       persist(Left(uid))(updateState)
     case SubscribeAck(Subscribe("join", None, self)) =>
