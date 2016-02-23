@@ -1,6 +1,7 @@
 package com.example.calcbattle.user.actors
 
 import akka.actor._
+import akka.cluster.pubsub.DistributedPubSubMediator.Unsubscribe
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.PersistentActor
 import com.example.calcbattle.user.actors.FieldActor.UID
@@ -19,6 +20,7 @@ object UserWorker {
     val isFinish = correctCount >= 5
   }
   case class Stopped(uid: UID)
+  case class AlreadyStopped(msg: String)
   case object DuplicateRequest
 
   sealed trait Event
@@ -36,7 +38,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   var correctCount = 0
   val mediator = DistributedPubSub(context.system).mediator
 
-  mediator ! Subscribe("update", self)
+  override def preStart() = mediator ! Subscribe("update", self)
 
   override def persistenceId: String = self.path.parent.name + "-" + self.path.name
 
@@ -53,6 +55,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
     case Create(uid) =>
       persist(Joined(sender, uid))(updateState)
   }
+
   def joined(socketActor: ActorRef, uid: UID): Receive = {
     case Create(uid) =>
       log.info("FieldActor.Join(uid) {}", uid)
@@ -65,7 +68,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
       log.info("UpdateCorrectCount(uid, isCorrect) {} {}", uid, isCorrect)
       persist(Answered(uid, isCorrect))(updateState)
     case u:FieldActor.UpdatedUserList =>
-      log.info("p:FieldActor.Participation {}", u)
+      log.info("u:FieldActor.UpdatedUserList {}", u)
       socketActor ! u
     case u:Updated =>
       log.info("u:UpdateUser {}", u)
@@ -78,10 +81,23 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
       context.parent ! Passivate(stopMessage = Stop)
     case Stop =>
       log.info("Stop")
+      context.become(stopped())
+      mediator ! Unsubscribe("update", self)
       mediator ! Publish("join", Stopped(uid))
       context.stop(self)
     case SubscribeAck(Subscribe("update", None, self)) =>
       log.info("UserWorker subscribing 'update'")
+  }
+
+  def stopped(): Receive = {
+    case Get(uid) =>
+      log.info("Get(uid) {}", uid)
+      log.info("already stopped")
+      sender ! AlreadyStopped("already stopped")
+      context.parent ! Passivate(stopMessage = Stop)
+    case Stop =>
+      log.info("Stop")
+      context.stop(self)
   }
 
   def updateState(event: Event): Unit = {
@@ -92,13 +108,13 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
         correctCount = 0
         context watch socketActor
         context.become(joined(socketActor, uid))
-        mediator ! Publish("join", FieldActor.Join(uid))
+        if(!recoveryRunning) mediator ! Publish("join", FieldActor.Join(uid))
       case Registered(uid, name) =>
         nicName = name
-        mediator ! Publish("update", Updated(uid, correctCount, nicName))
+        if(!recoveryRunning) mediator ! Publish("update", Updated(uid, correctCount, nicName))
       case Answered(uid, isCorrect) =>
         correctCount = if(isCorrect) correctCount + 1 else 0
-        mediator ! Publish("update", Updated(uid, correctCount, nicName))
+        if(!recoveryRunning) mediator ! Publish("update", Updated(uid, correctCount, nicName))
     }
   }
 }

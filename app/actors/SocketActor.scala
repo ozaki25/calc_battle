@@ -39,6 +39,7 @@ class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out:
 
   def receive = {
     case js: JsValue =>
+      println(js)
       (js \ "name").validate[String] foreach { userRouter ! UserWorker.UpdateName(uid, _) }
       (js \ "answer").validate[ExaminerActor.Answer] foreach { examinerRouter ! ExaminerActor.Check(_) }
       examinerRouter ! ExaminerActor.Create
@@ -80,17 +81,26 @@ class UsersHandler(userSize: Int, replyTo: ActorRef) extends Actor {
   context.setReceiveTimeout(5 seconds)
 
   var users: Set[UserWorker.Updated] = Set()
+  var numberOfResponse: Int = 0
 
   def receive = {
     case user: UserWorker.Updated =>
       context.setReceiveTimeout(1 second)
       users += user
-      if(users.size == userSize) {
-        replyTo ! UpdateUsers(users)
-        context.stop(self)
-      }
+      responseRecived()
+    case UserWorker.AlreadyStopped(msg) =>
+      println(msg)
+      responseRecived()
     case e: ReceiveTimeout =>
       replyTo ! UsersGetTimeout
       context.stop(self)
+  }
+
+  def responseRecived() = {
+    numberOfResponse += 1
+    if (numberOfResponse == userSize) {
+      replyTo ! UpdateUsers(users)
+      context.stop(self)
+    }
   }
 }
