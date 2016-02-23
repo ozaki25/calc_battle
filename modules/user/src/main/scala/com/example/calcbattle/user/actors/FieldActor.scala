@@ -32,6 +32,7 @@ class FieldActor extends PersistentActor with ActorLogging {
   }
 
   override def preStart() = {
+    println(s"FieldActor dispatcher: $context.dispatcher")
     val mediator = DistributedPubSub(context.system).mediator
     mediator ! Subscribe("join", self)
   }
