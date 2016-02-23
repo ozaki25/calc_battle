@@ -1,6 +1,6 @@
 package com.example.calcbattle.user.actors
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor._
 import akka.cluster.sharding.{ShardRegion, ClusterShardingSettings, ClusterSharding}
 
 object UserActor {
@@ -33,9 +33,10 @@ object UserActor {
   }
 }
 
-class UserActor extends Actor {
+class UserActor extends Actor with ActorLogging {
   def receive = {
     case msg =>
+      log.info("msg {}", msg)
       val shardRegion = ClusterSharding(context.system).shardRegion(UserWorker.name)
       shardRegion forward msg
   }

@@ -19,12 +19,14 @@ class Application extends Controller {
     val uid: String = request.session.get(UID).getOrElse {
       UUID.randomUUID().toString.replace("_", "")
     }
+    println(s"index : $uid")
     Ok(views.html.index(uid)).withSession {
       request.session + (UID -> uid)
     }
   }
 
   def ws = WebSocket.tryAcceptWithActor[JsValue, JsValue] { implicit request =>
+    println("ws")
     Future.successful(request.session.get(UID) match {
       case None => Left(Forbidden)
       case Some(uid) => Right(SocketActor.props(new UID(uid)))
