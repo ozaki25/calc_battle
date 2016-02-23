@@ -38,10 +38,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   var correctCount = 0
   val mediator = DistributedPubSub(context.system).mediator
 
-  override def preStart() = {
-    println(s"UserWorker dispatcher: $context.dispatcher")
-    mediator ! Subscribe("update", self)
-  }
+  override def preStart() = mediator ! Subscribe("update", self)
 
   override def persistenceId: String = self.path.parent.name + "-" + self.path.name
 

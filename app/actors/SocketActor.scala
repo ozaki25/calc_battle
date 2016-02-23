@@ -33,9 +33,7 @@ object SocketActor {
 }
 
 class SocketActor(uid: UID, examinerRouter: ActorRef, userRouter: ActorRef, out: ActorRef) extends Actor with ActorLogging {
-  override def preStart() = {
-    userRouter ! UserWorker.Create(uid)
-  }
+  override def preStart() = userRouter ! UserWorker.Create(uid)
 
   def receive = {
     case js: JsValue =>

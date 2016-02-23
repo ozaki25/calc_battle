@@ -34,8 +34,6 @@ object UserActor {
 }
 
 class UserActor extends Actor with ActorLogging {
-  override def preStart() = println(s"UserActor dispatcher: $context.dispatcher")
-
   def receive = {
     case msg =>
       log.info("msg {}", msg)
