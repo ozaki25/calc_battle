@@ -1,7 +1,7 @@
 package com.example.calcbattle.user.actors
 
 import akka.actor._
-import akka.persistence.PersistentActor
+import akka.persistence.{RecoveryCompleted, PersistentActor}
 
 object FieldActor {
   def props = Props(new FieldActor)
@@ -25,10 +25,11 @@ class FieldActor extends PersistentActor with ActorLogging {
   override def persistenceId: String = name
 
   override def receiveRecover: Receive = {
-    case event: Event => {
+    case event: Event =>
       log.info("receiveRecover")
       updateState(event)
-    }
+    case RecoveryCompleted =>
+      context.actorSelection("/system/sharding/UserWorker/*/*") ! UpdatedUserList(users)
   }
 
   override def preStart() = {
@@ -54,10 +55,10 @@ class FieldActor extends PersistentActor with ActorLogging {
     event match {
       case Joined(uid) =>
         users += uid
-        context.actorSelection("/system/sharding/UserWorker/*/*") ! UpdatedUserList(users)
+        if(!recoveryRunning) context.actorSelection("/system/sharding/UserWorker/*/*") ! UpdatedUserList(users)
       case Left(uid) =>
         users -= uid
-        context.actorSelection("/system/sharding/UserWorker/*/*") ! UpdatedUserList(users)
+        if(!recoveryRunning) context.actorSelection("/system/sharding/UserWorker/*/*") ! UpdatedUserList(users)
     }
     log.info("user count {}", users.size.toString)
   }

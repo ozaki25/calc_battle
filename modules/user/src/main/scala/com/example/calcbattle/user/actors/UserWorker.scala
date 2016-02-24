@@ -6,6 +6,8 @@ import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.PersistentActor
 import com.example.calcbattle.user.actors.FieldActor.UID
 
+import scala.concurrent.Future
+
 object UserWorker {
   def props(field: ActorRef) = Props(new UserWorker(field))
   val name = "UserWorker"
@@ -37,6 +39,7 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   var nicName = ""
   var correctCount = 0
   val mediator = DistributedPubSub(context.system).mediator
+  lazy val piWeight = context.system.settings.config.getLong("calc_battle.pi-weight")
 
   override def preStart() = mediator ! Subscribe("update", self)
 
@@ -53,34 +56,35 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
 
   def initial: Receive = {
     case Create(uid) =>
+      log.info("def: initial, case: Create(uid) {}", uid)
       persist(Joined(sender, uid))(updateState)
   }
 
   def joined(socketActor: ActorRef, uid: UID): Receive = {
     case Create(uid) =>
-      log.info("FieldActor.Join(uid) {}", uid)
+      log.info("def: joined, case: FieldActor.Create(uid) {}", uid)
       context unwatch socketActor
       persist(Joined(sender, uid))(updateState)
     case UpdateName(uid, name) =>
-      log.info("UpdateName(uid, isCorrect) {} {}", uid, name)
+      log.info("def: joined, case: UpdateName(uid, isCorrect) {} {}", uid, name)
       persist(Registered(uid, name))(updateState)
     case UpdateCorrectCount(uid, isCorrect) =>
-      log.info("UpdateCorrectCount(uid, isCorrect) {} {}", uid, isCorrect)
+      log.info("def: joined, case: UpdateCorrectCount(uid, isCorrect) {} {}", uid, isCorrect)
       persist(Answered(uid, isCorrect))(updateState)
     case u:FieldActor.UpdatedUserList =>
-      log.info("u:FieldActor.UpdatedUserList {}", u)
+      log.info("def: joined, case: u:FieldActor.UpdatedUserList {}", u)
       socketActor ! u
     case u:Updated =>
-      log.info("u:UpdateUser {}", u)
+      log.info("def: joined, case: u:UpdateUser {}", u)
       socketActor ! u
     case Get(uid) =>
-      log.info("Get(uid) {}", uid)
+      log.info("def: joined, case: Get(uid) {}", uid)
       sender ! Updated(uid, correctCount, nicName)
     case Terminated(user) =>
-      log.info("Terminated(user) {}", user)
+      log.info("def: joined, case: Terminated(user) {}", user)
       context.parent ! Passivate(stopMessage = Stop)
     case Stop =>
-      log.info("Stop")
+      log.info("def: joined, case: Stop")
       context.become(stopped())
       mediator ! Unsubscribe("update", self)
       mediator ! Publish("join", Stopped(uid))
@@ -91,12 +95,12 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
 
   def stopped(): Receive = {
     case Get(uid) =>
-      log.info("Get(uid) {}", uid)
+      log.info("def: stopped, case: Get(uid) {}", uid)
       log.info("already stopped")
       sender ! AlreadyStopped("already stopped")
       context.parent ! Passivate(stopMessage = Stop)
     case Stop =>
-      log.info("Stop")
+      log.info("def: stopped, case: Stop")
       context.stop(self)
   }
 
@@ -113,8 +117,27 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
         nicName = name
         if(!recoveryRunning) mediator ! Publish("update", Updated(uid, correctCount, nicName))
       case Answered(uid, isCorrect) =>
+        import context.dispatcher
+        Future {
+          log.info("Pi Start")
+          val v = pi(piWeight)
+          log.info("PI: {}", v)
+        }
         correctCount = if(isCorrect) correctCount + 1 else 0
         if(!recoveryRunning) mediator ! Publish("update", Updated(uid, correctCount, nicName))
     }
+  }
+
+  import scala.annotation.tailrec
+  def pi(m: Long) = {
+    def leibniz(n: Long) = 4.0 * (1 - (n % 2) * 2) / (2 * n + 1)
+
+    @tailrec
+    def inner(n:Long = 0, acc: Double = 0.0): Double =
+      if (n == m) acc
+      else {
+        inner(n + 1, acc + leibniz(n))
+      }
+    inner()
   }
 }
