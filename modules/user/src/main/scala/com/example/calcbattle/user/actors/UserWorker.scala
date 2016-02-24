@@ -35,6 +35,9 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
   import akka.cluster.pubsub.DistributedPubSub
   import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
   import com.example.calcbattle.user.actors.UserWorker._
+  import scala.concurrent.duration._
+
+  context.setReceiveTimeout(5 minutes)
 
   var nicName = ""
   var correctCount = 0
@@ -102,6 +105,15 @@ class UserWorker(field: ActorRef) extends PersistentActor with ActorLogging {
     case Stop =>
       log.info("def: stopped, case: Stop")
       context.stop(self)
+  }
+
+  override def unhandled(msg: Any): Unit = msg match {
+    case ReceiveTimeout =>
+      log.info("ReceiveTimeout")
+      context.parent ! Passivate(stopMessage = Stop)
+    case _  =>
+      log.info("unhandled(msg) {}", msg)
+      super.unhandled(msg)
   }
 
   def updateState(event: Event): Unit = {
